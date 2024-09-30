@@ -1,0 +1,9 @@
+;(executable
+; (name semant)
+; (modules semant)
+; (flags (:standard -w -37)))
+
+
+(env
+ (dev
+  (flags (:standard -warn-error -A))))

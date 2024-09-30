@@ -1,4 +1,4 @@
-
+module TAst = TypedAst
 
 (* Errors module *)
 module Sym = Symbol

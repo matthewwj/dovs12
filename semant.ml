@@ -1,3 +1,5 @@
+open Ast
+
 exception Unimplemented (* your code should eventually compile without this exception *)
 
 let typecheck_typ = function
