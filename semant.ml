@@ -1,4 +1,7 @@
-open Ast
+module Ast = Ast
+module TAst = TypedAst
+module Env = Env
+module Errors = Errors
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 

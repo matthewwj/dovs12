@@ -1,7 +1,7 @@
-;(executable
-; (name semant)
-; (modules semant)
-; (flags (:standard -w -37)))
+(executable
+ (name semant)
+ (modules semant ast typedAst symbol env errors typedPretty pretty)
+ (flags (:standard -w -37)))
 
 
 (env

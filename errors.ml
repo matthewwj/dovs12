@@ -1,5 +1,3 @@
-module TAst = TypedAst
-
 (* Errors module *)
 module Sym = Symbol
 module TAst = TypedAst
