@@ -27,13 +27,13 @@ let rec infertype_expr env expr =
     let (right_expr, right_type) = infertype_expr env right in
     let optyp = typecheck_op op in
     (match op with 
-    | Ast.Plus | Ast.Minus | Ast.Mul | Ast.Div -> 
+    | Ast.Plus | Ast.Minus | Ast.Mul | Ast.Div | Rem -> 
       if left_type = TAst.Int && right_type = TAst.Int then
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Int}, TAst.Int)
       else 
         raise Unimplemented
-      
-    | _ -> raise Unimplemented
+    | Lt | Le | Gt | Ge | Lor | Land | Eq | NEq ->  
+      raise Unimplemented
     )
   | _ -> raise Unimplemented
 
