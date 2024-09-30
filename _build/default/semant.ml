@@ -25,7 +25,7 @@ let rec infertype_expr env expr =
     (match op with 
     | Ast.Plus | Ast.Minus | Ast.Mul | Ast.Div -> 
       if left_type = TAst.Int && right_type = TAst.Int then
-        (TAst.BinOp {left = left_expr; op; right = right_expr}, TAst.Int)
+        (TAst.BinOp {left = left_expr; (op_expr, optyp); right = right_expr}, TAst.Int)
       else 
         raise (error_to_string TypeMismatch)
     | _ -> raise Unimplemented
