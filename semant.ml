@@ -14,9 +14,9 @@ let typecheck_typ = function
 let rec infertype_expr env expr =
   match expr with
   | Ast.Integer {int} ->
-    (TAst.Integer {int}, typecheck_typ Ast.Int)
+    (TAst.Integer {int}, TAst.Int)
   | Ast.Boolean {bool} -> 
-    (TAst.Boolean {bool}, typecheck_typ Ast.Bool)
+    (TAst.Boolean {bool}, TAst.Bool)
   | Ast.BinOp {left; op; right} -> 
     let (left, left_type) = infertype_expr env left in
     let (right, right_type) = infertype_expr env right in
