@@ -9,9 +9,23 @@ let typecheck_typ = function
 | Ast.Int -> TAst.Int
 | Ast.Bool -> TAst.Bool
 
+
 (* should return a pair of a typed expression and its inferred type. you can/should use typecheck_expr inside infertype_expr. *)
 let rec infertype_expr env expr =
   match expr with
+  | Ast.Integer {int} ->
+    (TAst.Integer {int}, typecheck_typ Ast.Int)
+  | Ast.Boolean {bool} -> 
+    (TAst.Boolean {bool}, typecheck_typ Ast.Bool)
+  | Ast.BinOp {left; op; right} -> 
+    let (left, left_type) = infertype_expr env left in
+    let (right, right_type) = infertype_expr env right in
+    (match op with 
+    | _ -> raise Unimplemented
+    )
+    
+    raise Unimplemented
+
   | _ -> raise Unimplemented
 and infertype_lval env lvl =
   match lvl with
