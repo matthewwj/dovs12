@@ -9,6 +9,10 @@ let typecheck_typ = function
 | Ast.Int -> TAst.Int
 | Ast.Bool -> TAst.Bool
 
+let typecheck_op op = 
+  match op with 
+  | Ast.Plus -> TAst.Plus
+  | _ -> raise Unimplemented
 
 
 (* should return a pair of a typed expression and its inferred type. you can/should use typecheck_expr inside infertype_expr. *)
@@ -21,19 +25,18 @@ let rec infertype_expr env expr =
   | Ast.BinOp {left; op; right} -> 
     let (left_expr, left_type) = infertype_expr env left in
     let (right_expr, right_type) = infertype_expr env right in
-    let (op_expr, optyp) = infertype_expr env op in
+    let optyp = typecheck_op op in
     (match op with 
     | Ast.Plus | Ast.Minus | Ast.Mul | Ast.Div -> 
       if left_type = TAst.Int && right_type = TAst.Int then
-        (TAst.BinOp {left = left_expr; (op_expr, optyp); right = right_expr}, TAst.Int)
+        (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Int}, TAst.Int)
       else 
-        raise (error_to_string TypeMismatch)
+        raise Unimplemented
+      
     | _ -> raise Unimplemented
     )
-    
-    raise Unimplemented
-
   | _ -> raise Unimplemented
+
 and infertype_lval env lvl =
   match lvl with
   | _ -> raise Unimplemented

@@ -13,14 +13,4 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ /Users/matthewwestergaard/.opam/cs3110-2024fa/bin/ocamlc.opt -config > /var/folders/gq/my19x15n3y906j6l3grc7v7c0000gn/T/dune_7f9e57_output
-$ (cd _build/default && /Users/matthewwestergaard/.opam/cs3110-2024fa/bin/ocamldep.opt -modules -impl semant.ml) > _build/default/.semant.eobjs/dune__exe__Semant.impl.d
-> File "semant.ml", line 28, characters 39-40:
-> 28 |         (TAst.BinOp {left = left_expr; (op_expr, optyp); right = right_expr}, TAst.Int)
->                                             ^
-> Error: Syntax error: "}" expected
-> File "semant.ml", line 28, characters 20-21:
-> 28 |         (TAst.BinOp {left = left_expr; (op_expr, optyp); right = right_expr}, TAst.Int)
->                          ^
->   This "{" might be unmatched
-[2]
+$ /Users/matthewwestergaard/.opam/cs3110-2024fa/bin/ocamlc.opt -config > /var/folders/gq/my19x15n3y906j6l3grc7v7c0000gn/T/dune_025811_output
