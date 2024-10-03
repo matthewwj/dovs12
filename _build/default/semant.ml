@@ -2,6 +2,7 @@ module Ast = Ast
 module TAst = TypedAst
 module Env = Env
 module Errors = Errors
+module Sym = Symbol
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 
@@ -46,7 +47,7 @@ let rec infertype_expr env expr =
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
       else
         raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
-        
+
     | Lor | Land ->
       if left_type = TAst.Bool && right_type = TAst.Bool then
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
@@ -67,19 +68,14 @@ let rec infertype_expr env expr =
     (TAst.Lval typed_lval, lval_type)
 
   | Ast.Assignment {lvl; rhs} -> 
-    let _, lvalType = infertype_lval env lvl in 
-    let rhsExpr = typecheck_expr env rhs lvalType in
-    let lvlType : TAst.lval =
-      match lvl with 
-      | Ast.Var (Ident {name}) ->
-        TAst.Var { ident = TAst.Ident {sym = Symbol.symbol name}; tp = lvalType}
-    in 
-    TAst.Assignment {lvl = lvlType; rhs = rhsExpr; tp = lvalType}, lvalType
+    raise Unimplemented
 
-  | Ast.Call {fname = Ident {name}; args} -> 
+  | Ast.Call {fname; args} -> 
+    let sym = Sym.symbol name in 
     (* Lookup the function in the environment *)
-    match Env.lookup_var_fun env name with
-    | _ -> raise Unimplemented
+    Env.lookup_var_fun env (match fname with Ident {name} -> name) 
+    raise Unimplemented
+
 
 and infertype_lval env lvl =
   match lvl with
