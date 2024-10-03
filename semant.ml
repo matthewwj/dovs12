@@ -4,6 +4,7 @@ module Env = Env
 module Errors = Errors
 
 exception Unimplemented (* your code should eventually compile without this exception *)
+exception UnimpRtrError (*temporary exception for no return error*)
 
 let typecheck_typ = function
 | Ast.Int -> TAst.Int
@@ -103,15 +104,18 @@ and typecheck_statement_seq env stms = raise Unimplemented
 let initial_environment = raise Unimplemented
 
 (*this method will check if the given stm is a return. this is used to check the last stm of an program.*)
-  let return_check env stm = raise Unimplemented
+  let return_check stm = 
+    match stm with 
+    | Ast.ReturnStm _ -> 1
+    | _ -> raise UnimpRtrError
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prg =
   let prgenv = Env.make_env in
-  let foldres = List.fold_left typecheck_statement prgenv prg in
+  let _foldres = List.fold_left typecheck_statement prgenv prg in
   let prglength = (List.length prg) - 1 in
   let prgtail = List.nth prg prglength in
-  return_check foldres prgtail
+  return_check prgtail
 
 
 
