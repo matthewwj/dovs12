@@ -82,13 +82,24 @@ let rec infertype_expr env expr =
     match Env.lookup_var_fun env name with
     | _ -> raise Unimplemented
 
-and infertype_lval env lvl =
+and infertype_lval (env : Env.environment) (lvl : Ast.lval) : TAst.expr * TAst.typ =
   match lvl with
-  | _ -> raise Unimplemented
+  | Ast.Var (Ident {name}) ->
+    let varOpType = Env.lookup_var_fun env (Sym.symbol name) in
+    let identName = TAst.Ident {sym = Sym.symbol name } in
+    (match varOpType with 
+     | None ->
+      raise (Invalid_argument (Errors.error_to_string (Errors.UndeclaredVariable {variablename = name})))
+     | Some varOrFun ->
+      (match varOrFun with
+       | Var typ -> TAst.Lval (TAst.Var {ident = identName; tp = typ}), typ
+       | _ -> raise Unimplemented      
+      )
+    )
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp = infertype_expr env expr in
-  if texprtp <> tp then raise Unimplemented;
+  if texprtp <> tp then raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch(actual = texprtp ; expected = tp))));
   texpr
 
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
