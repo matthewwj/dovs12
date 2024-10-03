@@ -67,7 +67,14 @@ let rec infertype_expr env expr =
     (TAst.Lval typed_lval, lval_type)
 
   | Ast.Assignment {lvl; rhs} -> 
-    raise Unimplemented
+    let _, lvalType = infertype_lval env lvl in 
+    let rhsExpr = typecheck_expr env rhs lvalType in
+    let lvlType : TAst.lval =
+      match lvl with 
+      | Ast.Var (Ident {name}) ->
+        TAst.Var { ident = TAst.Ident {sym = Symbol.symbol name}; tp = lvalType}
+    in 
+    TAst.Assignment {lvl = lvlType; rhs = rhsExpr; tp = lvalType}, lvalType
 
   | Ast.Call {fname; args} -> 
     (* Lookup the function in the environment *)
