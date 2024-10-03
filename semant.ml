@@ -20,8 +20,10 @@ let rec infertype_expr env expr =
   match expr with
   | Ast.Integer {int} ->
     (TAst.Integer {int}, TAst.Int)
+
   | Ast.Boolean {bool} -> 
     (TAst.Boolean {bool}, TAst.Bool)
+
   | Ast.BinOp {left; op; right} -> 
     let (left_expr, left_type) = infertype_expr env left in
     let (right_expr, right_type) = infertype_expr env right in
@@ -31,11 +33,46 @@ let rec infertype_expr env expr =
       if left_type = TAst.Int && right_type = TAst.Int then
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Int}, TAst.Int)
       else 
-        raise Unimplemented
-    | Lt | Le | Gt | Ge | Lor | Land | Eq | NEq ->  
-      raise Unimplemented
+        raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
+
+    | Lt | Le | Gt | Ge -> 
+      if left_type = TAst.Int && right_type = TAst.Int then
+        (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
+      else 
+        raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
+
+    | Eq | NEq -> 
+      if left_type = right_type then
+        (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
+      else
+        raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
+        
+    | Lor | Land ->
+      if left_type = TAst.Bool && right_type = TAst.Bool then
+        (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
+      else 
+        raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
     )
-  | _ -> raise Unimplemented
+    
+  | Ast.UnOp {op; operand} -> 
+    let (operand_expr, operand_type) = infertype_expr env operand in
+    let optyp = match op with
+    | Ast.Neg when operand_type = TAst.Int -> TAst.Neg
+    | Ast.Lnot when operand_type = TAst.Bool -> TAst.Lnot
+    | _ -> raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = operand_type; actual = operand_type}))) in
+      (TAst.UnOp {op = optyp; operand = operand_expr; tp = operand_type}, operand_type)
+
+  | Ast.Lval lvl -> 
+    let (typed_lval, lval_type) = infertype_lval env lvl in
+    (TAst.Lval typed_lval, lval_type)
+
+  | Ast.Assignment {lvl; rhs} -> 
+    raise Unimplemented
+
+  | Ast.Call {fname; args} -> 
+    (* Lookup the function in the environment *)
+    Env.lookup_var_fun env (match fname with Ident {name} -> name)
+    raise Unimplemented
 
 and infertype_lval env lvl =
   match lvl with
@@ -58,3 +95,10 @@ let initial_environment = raise Unimplemented
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prg = raise Unimplemented
+
+
+
+let test =
+  [
+    Ast.Integer {int = 5L};
+  ]
