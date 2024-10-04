@@ -2,9 +2,10 @@ module Ast = Ast
 module TAst = TypedAst
 module Env = Env
 module Errors = Errors
+module Sym = Symbol
 
 exception Unimplemented (* your code should eventually compile without this exception *)
-exception UnimpRtrError (*temporary exception for no return error*)
+exception UnimpRtrError (* temporary exception for no return error *)
 
 let typecheck_typ = function
 | Ast.Int -> TAst.Int
@@ -82,52 +83,59 @@ let rec infertype_expr env expr =
     match Env.lookup_var_fun env name with
     | _ -> raise Unimplemented
 
-and infertype_lval (env : Env.environment) (lvl : Ast.lval) : TAst.expr * TAst.typ =
+and infertype_lval env lvl =
   match lvl with
-  | Ast.Var (Ident {name}) ->
-    let varOpType = Env.lookup_var_fun env (Sym.symbol name) in
-    let identName = TAst.Ident {sym = Sym.symbol name } in
-    (match varOpType with 
-     | None ->
-      raise (Invalid_argument (Errors.error_to_string (Errors.UndeclaredVariable {variablename = name})))
-     | Some varOrFun ->
-      (match varOrFun with
-       | Var typ -> TAst.Lval (TAst.Var {ident = identName; tp = typ}), typ
-       | _ -> raise Unimplemented      
-      )
-    )
+  | _ -> raise Unimplemented
 (* checks that an expression has the required type tp by inferring the type and comparing it to tp. *)
 and typecheck_expr env expr tp =
   let texpr, texprtp = infertype_expr env expr in
-  if texprtp <> tp then raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch(actual = texprtp ; expected = tp))));
+  if texprtp <> tp then raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch{actual = texprtp ; expected = tp})));
   texpr
 
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
 let rec typecheck_statement env stm =
   match stm with
-  | _ -> raise Unimplemented
+  | Ast.VarDeclStm {name = Ident {name}; tp; body} -> 
+    raise Unimplemented
 
+  | Ast.ExprStm {expr} -> 
+    (match expr with
+    | Some expr ->
+      let typed_expr, _ = infertype_expr env expr in
+      TAst.ExprStm {expr = Some typed_expr}
+    | None -> TAst.ExprStm {expr = None})
+
+  | Ast.CompoundStm {stms} -> 
+    let typed_stms = typecheck_statement_seq env stms in
+    TAst.CompoundStm {stms = typed_stms}
+
+  | Ast.ReturnStm {ret} -> 
+    let typed_ret, ret_type = infertype_expr env ret in
+    TAst.ReturnStm {ret = typed_ret}
+
+  | _ -> raise Unimplemented
 (* should use typecheck_statement to check the block of statements. *)
-(*might need to be removed, as this is implemented in typecheck_prog.*)
-and typecheck_statement_seq env stms = raise Unimplemented
+and typecheck_statement_seq env stms =
+  List.map (typecheck_statement env) stms
 
 (* the initial environment should include all the library functions, no local variables, and no errors. *)
 let initial_environment = raise Unimplemented
 
 (*this method will check if the given stm is a return. this is used to check the last stm of an program.*)
-  let return_check stm = 
-    match stm with 
-    | Ast.ReturnStm _ -> 1
-    | _ -> raise UnimpRtrError
+let return_check stm = 
+  match stm with 
+  | Ast.ReturnStm _ -> 1
+  | _ -> raise UnimpRtrError
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
 let typecheck_prog prg =
-  let prgenv = Env.make_env in
+  (*let prgenv = Env.make_env in
   let _foldres = List.fold_left typecheck_statement prgenv prg in
   let prglength = (List.length prg) - 1 in
   let prgtail = List.nth prg prglength in
-  return_check prgtail
-
+  return_check prgtail*)
+  raise Unimplemented
+  
 
 
 let test =
