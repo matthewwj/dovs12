@@ -1,0 +1,10 @@
+(executable
+ (name semant)
+ (modules semant ast typedAst symbol env errors typedPretty pretty)
+ (libraries printbox)
+ (flags (:standard -w -37)))
+
+
+(env
+ (dev
+  (flags (:standard -warn-error -A))))
