@@ -1,8 +1,9 @@
 (executable
- (name semant)
- (modules semant ast typedAst symbol env errors typedPretty pretty)
+ (name semanttest)
+ (modules semanttest semant ast typedAst symbol env errors typedPretty pretty runTimeBindings)
  (libraries printbox)
  (flags (:standard -w -37)))
+
 
 
 (env
