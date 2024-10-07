@@ -17,3 +17,6 @@ run:
 	./_build/default/semanttest.exe
 	@echo "----------------------------------"
 	
+test: 
+	@echo "Testing semant"
+	./_build/default/semanttest.exe

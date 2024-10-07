@@ -2,37 +2,37 @@ module Ast = Ast
 module TAst = TypedAst
 module Env = Env
 module Errors = Errors
-  module Sym = Symbol
-  module RunTimeBindings = RunTimeBindings
+module Sym = Symbol
+module RunTimeBindings = RunTimeBindings
   
-  exception Unimplemented (* your code should eventually compile without this exception *)
-  exception UnimpRtrError (* temporary exception for no return error *)
+exception Unimplemented (* your code should eventually compile without this exception *)
+exception UnimpRtrError (* temporary exception for no return error *)
   
-  let typecheck_typ = function
-    | Ast.Int -> TAst.Int
-    | Ast.Bool -> TAst.Bool
+let typecheck_typ = function
+  | Ast.Int -> TAst.Int
+  | Ast.Bool -> TAst.Bool
   
-  let typecheck_op op = 
-    match op with 
-    | Ast.Plus -> TAst.Plus
-    | Ast.Minus -> TAst.Minus
-    | Ast.Mul -> TAst.Mul
-    | Ast.Div -> TAst.Div
-    | Ast.Rem -> TAst.Rem
-    | Ast.Lt -> TAst.Lt
-    | Ast.Le -> TAst.Le
-    | Ast.Gt -> TAst.Gt
-    | Ast.Ge -> TAst.Ge
-    | Ast.Lor -> TAst.Lor
-    | Ast.Land -> TAst.Land
-    | Ast.Eq -> TAst.Eq
-    | Ast.NEq -> TAst.NEq
+let typecheck_op op = 
+  match op with 
+  | Ast.Plus -> TAst.Plus
+  | Ast.Minus -> TAst.Minus
+  | Ast.Mul -> TAst.Mul
+  | Ast.Div -> TAst.Div
+  | Ast.Rem -> TAst.Rem
+  | Ast.Lt -> TAst.Lt
+  | Ast.Le -> TAst.Le
+  | Ast.Gt -> TAst.Gt
+  | Ast.Ge -> TAst.Ge
+  | Ast.Lor -> TAst.Lor
+  | Ast.Land -> TAst.Land
+  | Ast.Eq -> TAst.Eq
+  | Ast.NEq -> TAst.NEq
   
-  let rec safe_zip l1 l2 =
-    match l1, l2 with
-    | a :: an, b :: bn -> (a, b) :: safe_zip an bn
-    | [], [] -> []
-    | [], _ | _, [] -> failwith "safe_zip: Lists have different lengths"
+let rec safe_zip l1 l2 =
+  match l1, l2 with
+  | a :: an, b :: bn -> (a, b) :: safe_zip an bn
+  | [], [] -> []
+  | [], _ | _, [] -> failwith "safe_zip: Lists have different lengths"
   
   (* should return a pair of a typed expression and its inferred type. you can/should use typecheck_expr inside infertype_expr. *)
   let rec infertype_expr env expr =
@@ -210,72 +210,3 @@ module Errors = Errors
     let tProg, env_res = typecheck_statement_seq env prg in
     tProg, !(env_res.errors)
   ;;
-
-
-
-(*
-(* Example Program AST:
-   int x = 5;
-   return x + 2;
-*)
-
-let simple_program = [
-  Ast.VarDeclStm {
-    name = Ast.Ident {name = "x"};
-    tp = Some Ast.Int;
-    body = Ast.Integer {int = 5L};
-  };
-  Ast.ReturnStm {
-    ret = Ast.BinOp {
-    left = Ast.Integer {int = 2L};
-    op = Ast.Plus;
-    right = Ast.Integer {int = 2L};
-    };
-  }
-]
-
-(* Example Program AST without a return:
-   int x = 5;
-*)
-
-let program_no_return = [
-  Ast.VarDeclStm {
-    name = Ast.Ident {name = "x"};
-    tp = Some Ast.Int;
-    body = Ast.Integer {int = 5L};
-  }
-]
-
-let test_var_decl_and_assignment = [
-  Ast.CompoundStm {
-    stms = [
-      Ast.VarDeclStm {name = Ast.Ident {name = "x"}; tp = Some Ast.Int; body = Ast.Integer {int = 5L}};
-      Ast.ExprStm {expr = Some (Ast.Assignment {lvl = Ast.Var (Ast.Ident {name = "x"}); rhs = Ast.Integer {int = 10L}})}
-    ];
-  };
-  Ast.ReturnStm {
-    ret = Ast.BinOp {
-    left = Ast.Integer {int = 2L};
-    op = Ast.Plus;
-    right = Ast.Integer {int = 2L};
-    };
-  }
-]
-
-
-let test_typecheck program =
-  try
-    let _ = typecheck_prog program in
-    print_endline "Program typechecked successfully."
-  with
-  | Invalid_argument msg -> print_endline ("Typecheck failed: " ^ msg)
-  | Unimplemented -> print_endline "Unimplemented feature encountered."
-  | _ -> print_endline "Unknown error during typecheck."
-
-(* Test with the simple valid program *)
-let () =
-  
-
-  print_endline "Testing simple program:";
-  test_typecheck test_var_decl_and_assignment;
-  *)
