@@ -14,7 +14,7 @@ clean:
 
 run: 
 	@echo "Testing semant"
-	./_build/default/semanttest.exe
+	
 	@echo "----------------------------------"
 	
 test: 

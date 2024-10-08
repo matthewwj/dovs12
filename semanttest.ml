@@ -76,7 +76,7 @@ let test_shadowing = [
     stms = [
       Ast.VarDeclStm {
         name = Ast.Ident {name = "x"};  
-        tp = Some Ast.Int;
+        tp = Some Ast.Bool;
         body = Ast.Integer {int = 10L}; 
       };
       
