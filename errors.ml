@@ -11,6 +11,7 @@ type error =
 | MissingArguments of {expected: int; actual: int}
 | NotAFunction of {name : string}
 | UnexpectedReturnType of { expected : TAst.typ; actual : TAst.typ}
+| Shadowing of {name : string} 
 | NotEndInRet
 (* other errors to be added as needed. *)
 
@@ -25,3 +26,4 @@ let error_to_string err =
   | NotAFunction {name} -> Printf.sprintf "Tried to call non-function %s" name 
   | UnexpectedReturnType {expected; actual} -> Printf.sprintf "Unexpected return type: expected %s but found %s." (TPretty.typ_to_string expected) (TPretty.typ_to_string actual)
   | NotEndInRet -> "The program does not end in a return statement."
+  | Shadowing {name} -> Printf.sprintf "Shadowing error please update this error msg %s" name 

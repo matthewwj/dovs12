@@ -140,6 +140,10 @@ let rec safe_zip l1 l2 =
   let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.environment =
     match stm with
     | Ast.VarDeclStm {name = Ast.Ident {name = sname}; tp; body} -> 
+      (*(* Check for shadowing *)
+      if Env.lookup_var_fun env (Sym.symbol sname) <> None then
+        raise (Invalid_argument (Errors.error_to_string (Errors.Shadowing {name = sname})));*)
+  
       let tname = TAst.Ident {sym = Sym.symbol sname} in
       let typeBody, tbody_type = 
         match tp with 
@@ -147,7 +151,8 @@ let rec safe_zip l1 l2 =
         | Some btp -> typecheck_expr env body (typecheck_typ btp), typecheck_typ btp
       in
       (TAst.VarDeclStm {name = tname; tp = tbody_type; body = typeBody}, 
-      Env.insert_local_decl env (Sym.symbol sname) tbody_type) 
+      Env.insert_local_decl env (Sym.symbol sname) tbody_type)
+  
   
     | Ast.ExprStm {expr} -> 
       (match expr with
