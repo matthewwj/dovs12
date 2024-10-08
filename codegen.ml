@@ -47,11 +47,10 @@ let comparison_op_match (op : TAst.binop) : Ll.cnd =
   | NEq -> Ne
   | _ -> raise Unimplemented
 
-
 let type_op_match (tp : TAst.typ) : Ll.ty = 
   match tp with 
   | Void -> Void 
-  | Int -> I64
+  | Int -> Ll.I64
   | Bool -> I1
   | ErrorType -> raise @@ UnexpectedInput "Not void/int/bool type!"
 
@@ -119,28 +118,40 @@ let rec codegen_expr env expr =
 
 
 
-
-
 let rec codegen_stmt env stm = 
   let emit = emit env in
   match stm with
   | TAst.VarDeclStm {name = Ident {sym}; tp; body} ->
-    raise Unimplemented
-  | TAst.ExprStm {expr = Some expr} ->
-    raise Unimplemented
-  | TAst.CompoundStm {stms} ->
-    raise Unimplemented
-  | TAst.ReturnStm {ret} ->
-    raise Unimplemented
+    let rhs_val = codegen_expr env body in
+    let llty = type_op_match tp in
+    let local_sym = fresh_symbol (Sym.name sym) in
+    let ptr = Ll.Id local_sym in
+    emit @@ CfgBuilder.add_alloca (local_sym, llty);
+    let current_locals = env.locals in
+    let new_locals = Sym.Table.add sym (llty, ptr) current_locals in
+    let new_env = {env with locals = new_locals} in
+    emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, rhs_val, ptr));
+    new_env
   | TAst.ExprStm {expr} ->
-    raise Unimplemented
+    (match expr with 
+    | Some expr -> 
+      let _ = codegen_expr env expr in
+      env
+    | None -> env)
+  | TAst.CompoundStm {stms} ->
+    List.fold_left codegen_stmt env stms
+  | TAst.ReturnStm {ret} ->
+    let cret = codegen_expr env ret in
+    emit @@ CfgBuilder.term_block (Ll.Ret (I64, Some cret));
+    env
+  
   | TAst.IfThenElseStm {cond; thbr; elbro} ->
     raise Unimplemented
 
 
-let codegen_stmt_list env stmts = raise Unimplemented
+let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 
 
 
 
-let codegen_prog typed_prog = raise Unimplemented
+let codegen_prog = raise Unimplemented
