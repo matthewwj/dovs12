@@ -8,6 +8,7 @@ module B = CfgBuilder
 module Ll = Ll
 
 exception Unimplemented (* your code should eventually compile without this exception *)
+exception UnexpectedInput of string
 
 type cg_env = 
   { cfgb: CfgBuilder.cfg_builder ref
@@ -23,6 +24,47 @@ let fresh_symbol =
   fun initial -> 
     let n = !c in c := n + 1; Sym.symbol (initial ^ (string_of_int n))
 
+let binop_op_match (op : TAst.binop) : Ll.bop =
+  match op with
+  | Plus -> Add
+  | Minus -> Sub
+  | Mul -> Mul
+  | Div -> SDiv
+  | Rem -> SRem
+  | Lor -> Or
+  | Land -> And
+  | _ -> raise Unimplemented
+
+let comparison_op_match (op : TAst.binop) : Ll.cnd =
+  match op with
+  | Lt -> Slt
+  | Le -> Sle
+  | Gt -> Sgt
+  | Ge -> Sge
+  | Eq -> Eq
+  | NEq -> Ne
+  | _ -> raise Unimplemented
+
+
+let type_op_match (tp : TAst.typ) : Ll.ty = 
+  match tp with 
+  | Void -> Void 
+  | Int -> I64
+  | Bool -> I1
+  | ErrorType -> raise @@ UnexpectedInput "Not void/int/bool type!"
+
+let type_of_expr (expr : TAst.expr) : Ll.ty =
+  match expr with
+  | Integer _ -> I64
+  | Boolean _ -> I1
+  | BinOp { tp; _ } -> type_op_match tp
+  | UnOp { tp; _ } -> type_op_match tp
+  | Lval (Var { tp; _ }) -> type_op_match tp
+  | Assignment _ -> Void
+  | Call { tp; _ } -> type_op_match tp
+
+
+  
 let rec codegen_expr env expr =
   let emit = emit env in
   let emit_insn_with_fresh hint inst = 
