@@ -73,26 +73,69 @@ let rec codegen_expr env expr =
     let tmp = fresh_symbol hint in
     emit @@ CfgBuilder.add_insn (Some tmp, inst);
     Ll.Id tmp in
-
-  
   match expr with
+  | TAst.Integer {int} -> Ll.IConst64 int
+  | TAst.Boolean {bool} -> Ll.BConst bool
   | TAst.BinOp {left; op; right; _} -> (
-    let left = codegen_expr env left in
-    let right = codegen_expr env right in
+    let cleft = codegen_expr env left in
+    let cright = codegen_expr env right in
+    let paramtyp = type_of_expr left in
     match op with 
-      | Plus -> emit_insn_with_fresh "tmp_add" @@ Ll.Binop (Ll.Add, Ll.I64, left, right)
-      | _ -> raise Unimplemented )
-    
-  | _ -> raise Unimplemented
+    | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem ->
+      emit_insn_with_fresh "temp_name" @@ Ll.Binop (binop_op_match op, Ll.I64, cleft, cright)
+    | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge -> 
+      emit_insn_with_fresh "temp_name" @@ Ll.Icmp (comparison_op_match op, Ll.I64, cleft, cright)
+    | _ -> raise Unimplemented (*Missing Logical operators still*)
+      )
+  | TAst.UnOp {op; operand; _} -> (
+    let coperand = codegen_expr env operand in
+    match op with
+    | TAst.Neg -> 
+      emit_insn_with_fresh "neg" @@ Ll.Binop (Sub, Ll.I64, Ll.IConst64 0L, coperand)
+    | TAst.Lnot -> 
+      emit_insn_with_fresh "not" @@ Ll.Binop (Xor, Ll.I1, Ll.BConst true, coperand)
+  )
+  | TAst.Lval (Var {ident = Ident {sym}; tp}) -> (
+    match Sym.Table.find_opt sym env.locals with
+    | Some (_, llop) -> llop
+    | None -> raise @@ UnexpectedInput "Variable not found"
+  ) 
+  | TAst.Assignment {lvl = Var {ident = Ident {sym}; tp}; rhs; _} -> (
+    let crhs = codegen_expr env rhs in
+    match Sym.Table.find_opt sym env.locals with
+    | Some (llty, llop) ->
+      emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, crhs, llop));
+      crhs
+    | None -> raise @@ UnexpectedInput "Variable not found"
+  )
+  | TAst.Call {fname = Ident { sym }; args; tp} -> (
+    let llty = type_op_match tp in
+    let carglist = List.map (fun arg -> 
+      let carg = codegen_expr env arg in
+      let carg_ty = type_of_expr arg in
+      (carg_ty, carg)) args in
+    emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
+  )
 
 
 
 
 
 let rec codegen_stmt env stm = 
-  raise Unimplemented
-
-
+  let emit = emit env in
+  match stm with
+  | TAst.VarDeclStm {name = Ident {sym}; tp; body} ->
+    raise Unimplemented
+  | TAst.ExprStm {expr = Some expr} ->
+    raise Unimplemented
+  | TAst.CompoundStm {stms} ->
+    raise Unimplemented
+  | TAst.ReturnStm {ret} ->
+    raise Unimplemented
+  | TAst.ExprStm {expr} ->
+    raise Unimplemented
+  | TAst.IfThenElseStm {cond; thbr; elbro} ->
+    raise Unimplemented
 
 
 let codegen_stmt_list env stmts = raise Unimplemented
