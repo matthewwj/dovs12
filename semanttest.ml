@@ -36,7 +36,7 @@ let test_addition_type_mismatch = [
     stms = [
       Ast.ExprStm {expr = Some (Ast.BinOp {
         left = Ast.Integer {int = 5L};
-        op = Ast.Minus;
+        op = Ast.Plus;
         right = Ast.Boolean {bool = true}; 
       })}
     ];
@@ -89,15 +89,14 @@ let test_shadowing = [
       };
     ]
   };
-  
   Ast.ReturnStm {
     ret = Ast.Lval (Ast.Var (Ast.Ident {name = "x"})); 
   }
 ]
 
-let test_negative_shadowing = [
+let test_declared_var_in_inner_used_in_outer = [
   Ast.VarDeclStm {
-    name = Ast.Ident {name = "x"};
+    name = Ast.Ident {name = "y"};
     tp = Some Ast.Int;
     body = Ast.Integer {int = 5L};
   };
@@ -115,6 +114,11 @@ Ast.CompoundStm {
     })}
   ];
 };
+Ast.ExprStm {expr = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"})); 
+      op = Ast.Plus;
+      right = Ast.Integer {int = 2L};
+    })};
 Ast.ReturnStm {
   ret = Ast.BinOp {
     left = Ast.Integer {int = 2L};
@@ -148,6 +152,29 @@ let func_call_test = [
     }  
 ]
 
+let func_call_test2 = [
+    Ast.VarDeclStm {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Int; 
+      body = Ast.Integer {int = 10L}  
+    };
+    Ast.ExprStm {
+      expr = Some (
+        Ast.Call {
+          fname = Ast.Ident {name = "print_integer"};
+          args = [Ast.Lval (Ast.Var (Ast.Ident {name = "x"}))]
+        }
+      )
+    };
+    Ast.ReturnStm {
+      ret = Ast.BinOp {
+        left = Ast.Integer {int = 2L};
+        op = Ast.Plus;
+        right = Ast.Integer {int = 2L};
+      };
+    }  
+]
+
 
 let test_typecheck program =
   try
@@ -158,7 +185,6 @@ let test_typecheck program =
   | Unimplemented -> print_endline "Unimplemented feature encountered."
   | _ -> print_endline "Unknown error during typecheck."
 
-(* Test with the simple valid program *)
 let () =
   print_endline "Testing simple program: Positive test";
   test_typecheck simple_program;
@@ -168,20 +194,25 @@ let () =
 
   print_endline "Testing no return prog: Negative test";
   test_typecheck program_no_return;
-  
-  print_endline "Testing shadowing: Positive test";
-  test_typecheck test_shadowing;
-
-  print_endline "Testing shadowing: Negative test";
-  test_typecheck test_negative_shadowing;
 
   print_endline "Testing return bool: Negative test";
   test_typecheck program_returns_bool;
 
-  print_endline "Testing function call";
+  print_endline "Testing function call: Negative test";
   test_typecheck func_call_test;
   
+  print_endline "Testing function call: Positive test";
+  test_typecheck func_call_test2;
+  
+  print_endline "Testing variable declared in inner block, tried using in outer: Negative test";
+  test_typecheck test_declared_var_in_inner_used_in_outer;
+
+  print_endline "Testing var decls and assignments: Positive test";
+  test_typecheck test_var_decl_and_assignment;
+
+  (* We need to look at these tests and the implementation *)
+  print_endline "Testing shadowing: Positive test";
+  test_typecheck test_shadowing;
 
   
-
   
