@@ -10,10 +10,12 @@ module Ll = Ll
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedInput of string
 
+
 type cg_env = 
   { cfgb: CfgBuilder.cfg_builder ref
   ; locals: (Ll.ty * Ll.operand) Sym.Table.t}
 
+  (* Helper functions below*)
 let emit env b =
   let current_builder = !(env.cfgb) in
   let new_builder = b current_builder in
@@ -64,7 +66,7 @@ let type_of_expr (expr : TAst.expr) : Ll.ty =
   | Call { tp; _ } -> type_op_match tp
 
 
-  
+(* Codegen for expressions *)
 let rec codegen_expr env expr =
   let emit = emit env in
   let emit_insn_with_fresh hint inst = 
