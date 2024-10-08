@@ -4,7 +4,11 @@
  (libraries printbox)
  (flags (:standard -w -37)))
 
-
+(executable
+(name codegen)
+(modules codegen semant ast typedAst symbol env errors typedPretty pretty runTimeBindings cfgBuilder ll)
+ (libraries printbox)
+ (flags (:standard -w -37)))
 
 (env
  (dev
