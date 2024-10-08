@@ -92,11 +92,14 @@ let rec codegen_expr env expr =
     | TAst.Neg -> 
       emit_insn_with_fresh "neg" @@ Ll.Binop (Sub, Ll.I64, Ll.IConst64 0L, coperand)
     | TAst.Lnot -> 
-      emit_insn_with_fresh "not" @@ Ll.Binop (Xor, Ll.I1, Ll.BConst true, coperand)
+      emit_insn_with_fresh "not" @@ Ll.Icmp (Eq, Ll.I1, Ll.BConst true, coperand)
   )
   | TAst.Lval (Var {ident = Ident {sym}; tp}) -> (
+    let llty = type_op_match tp in
     match Sym.Table.find_opt sym env.locals with
-    | Some (_, llop) -> llop
+    | Some (llty, llop) -> 
+      (* Load the value from the memory address *)
+      emit_insn_with_fresh "load" @@ Ll.Load (llty, llop);
     | None -> raise @@ UnexpectedInput "Variable not found"
   ) 
   | TAst.Assignment {lvl = Var {ident = Ident {sym}; tp}; rhs; _} -> (
