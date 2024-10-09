@@ -53,26 +53,22 @@ let rec infertype_expr env expr =
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Int}, TAst.Int)
       else
         raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
-
     | Lt | Le | Gt | Ge ->
       if left_type = TAst.Int && right_type = TAst.Int then
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
       else
         raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
-
     | Eq | NEq ->
       if left_type = right_type then
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
       else
         raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
-
     | Lor | Land ->
       if left_type = TAst.Bool && right_type = TAst.Bool then
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
       else
         raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type})))
     )
-  
   | Ast.UnOp {op; operand} ->
     let (operand_expr, operand_type) = infertype_expr env operand in
     let optyp = match op with
@@ -81,9 +77,7 @@ let rec infertype_expr env expr =
       | _ -> raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = operand_type; actual = operand_type})))
     in
     (TAst.UnOp {op = optyp; operand = operand_expr; tp = operand_type}, operand_type)
-
   | Ast.Lval lvl -> infertype_lval env lvl
-
   | Ast.Assignment {lvl; rhs} ->
     let _, lvalType = infertype_lval env lvl in
     let rhsExpr = typecheck_expr env rhs lvalType in
@@ -93,10 +87,9 @@ let rec infertype_expr env expr =
         TAst.Var {ident = TAst.Ident {sym = Symbol.symbol name}; tp = lvalType}
     in
     (TAst.Assignment {lvl = lvlType; rhs = rhsExpr; tp = lvalType}, lvalType)
-
   | Ast.Call {fname = Ident {name}; args} ->
-    (* Lookup the function in the environment *)
     let sym = Sym.symbol name in
+    (* Lookup the function in the environment *)
     (match Env.lookup_var_fun env sym with
     | Some (Env.Fun (TAst.FunTyp {ret; params})) ->
       let param_len = List.length params in
@@ -140,10 +133,6 @@ and typecheck_expr env expr tp =
 let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.environment =
   match stm with
   | Ast.VarDeclStm {name = Ast.Ident {name = sname}; tp; body} ->
-    (*(* Check for shadowing *)
-    if Env.lookup_var_fun env (Sym.symbol sname) <> None then
-      raise (Invalid_argument (Errors.error_to_string (Errors.Shadowing {name = sname})));*)
-
     let tname = TAst.Ident {sym = Sym.symbol sname} in
     let typeBody, tbody_type =
       match tp with

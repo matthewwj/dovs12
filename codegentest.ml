@@ -349,3 +349,5 @@ let () =
 
   print_endline "Testing assignment type mismatch: Negative test";
   test_codegen test_assignment_type_mismatch "test15.ll";
+
+  compile_prog if_then_else_test;

@@ -79,13 +79,14 @@ let rec codegen_expr env expr =
   | TAst.BinOp {left; op; right; _} -> (
     let cleft = codegen_expr env left in
     let cright = codegen_expr env right in
-    
     match op with 
     | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem ->
       emit_insn_with_fresh "temp_name" @@ Ll.Binop (binop_op_match op, Ll.I64, cleft, cright)
-    | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge -> 
+    | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge | TAst.Eq | TAst.NEq-> 
       emit_insn_with_fresh "temp_name" @@ Ll.Icmp (comparison_op_match op, Ll.I64, cleft, cright)
-    | _ -> raise Unimplemented (*Missing Logical operators still*)
+    | TAst.Lor | TAst.Land ->
+      raise Unimplemented
+     (*Missing Logical operators still*)
       )
   | TAst.UnOp {op; operand; _} -> (
     let coperand = codegen_expr env operand in
@@ -164,7 +165,10 @@ let rec codegen_stmt env stm =
     emit b;
     
     emit @@ CfgBuilder.add_insn (None, Ll.Store (Ll.I1, cond_op, Ll.Id ll_sym));
-    emit @@ CfgBuilder.term_block (Ll.Cbr (Ll.Id ll_sym, then_block, else_block));
+    let cond_val = fresh_symbol ("condValue") in
+    emit @@ CfgBuilder.add_insn (Some cond_val, Ll.Load (Ll.I1, Ll.Id ll_sym));
+
+    emit @@ CfgBuilder.term_block (Ll.Cbr (Ll.Id cond_val, then_block, else_block));
     
 
     emit @@ CfgBuilder.start_block then_block;
@@ -192,10 +196,9 @@ let codegen_prog tprog=
   let env = codegen_stmt_list empty_environment tprog in
   let cfg = CfgBuilder.get_cfg !(env.cfgb) in
   let dolphin_main = { fty = [], I64; param = []; cfg } in
-  { tdecls = [] ; extgdecls = [] ; gdecls = [] ; extfuns = [Sym.symbol "print_integer", ([ I64 ], Void); Sym.symbol "read_integer", ([], I64)]
+  { tdecls = [] ; extgdecls = [] ; gdecls = [] ; extfuns = [Sym.symbol "print_integer", ([I64], Void); Sym.symbol "read_integer", ([], I64)]
   ; fdecls = [ Sym.symbol "main", dolphin_main ]}
 
-let string_of_ast tprog = codegen_prog tprog |> Ll.string_of_prog
 
 
 let write_to_file (path: string) (contents: string) = 
