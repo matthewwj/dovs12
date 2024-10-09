@@ -6,6 +6,7 @@ module Sym = Symbol
 module RunTimeBindings = RunTimeBindings
 module B = CfgBuilder
 module Ll = Ll
+module Semant = Semant
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedInput of string
@@ -142,19 +143,88 @@ let rec codegen_stmt env stm =
       env
     | None -> env)
   | TAst.CompoundStm {stms} ->
-    List.fold_left codegen_stmt env stms
+    let original_locals = env.locals in
+    let inner_env = { env with locals = original_locals } in
+    let final_env = List.fold_left codegen_stmt inner_env stms in
+    (* Restore original locals after compound block *)
+    { final_env with locals = original_locals }
   | TAst.ReturnStm {ret} ->
     let cret = codegen_expr env ret in
     emit @@ CfgBuilder.term_block (Ll.Ret (I64, Some cret));
     env
-  
   | TAst.IfThenElseStm {cond; thbr; elbro} ->
-    raise Unimplemented
+    
+    let then_block = fresh_symbol "then" in
+    let else_block = fresh_symbol "else" in
+    let final_block = fresh_symbol "final" in
+    let cond_op = codegen_expr env cond in
+    let ll_sym = fresh_symbol ("condSym") in
+    
+    let b = CfgBuilder.add_alloca (ll_sym, Ll.I1) in (* Can only ever be boolean *)
+    emit b;
+    
+    emit @@ CfgBuilder.add_insn (None, Ll.Store (Ll.I1, cond_op, Ll.Id ll_sym));
+    emit @@ CfgBuilder.term_block (Ll.Cbr (Ll.Id ll_sym, then_block, else_block));
+    
+
+    emit @@ CfgBuilder.start_block then_block;
+    let env_after = codegen_stmt env thbr in
+    emit @@ CfgBuilder.term_block (Ll.Br (final_block));
+    
+    let env_after =
+      match elbro with
+      | Some else_branch -> 
+        emit @@ CfgBuilder.start_block else_block;
+        codegen_stmt env else_branch;
+      | None -> env
+      in
+    emit @@ CfgBuilder.term_block (Ll.Br (final_block));
+    emit @@ CfgBuilder.start_block final_block;
+    env_after
 
 
 let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 
 
+let codegen_prog tprog= 
+  let open Ll in
+  let empty_environment = { cfgb = ref CfgBuilder.empty_cfg_builder; locals = Sym.Table.empty } in
+  let env = codegen_stmt_list empty_environment tprog in
+  let cfg = CfgBuilder.get_cfg !(env.cfgb) in
+  let dolphin_main = { fty = [], I64; param = []; cfg } in
+  { tdecls = [] ; extgdecls = [] ; gdecls = [] ; extfuns = [Sym.symbol "print_integer", ([ I64 ], Void); Sym.symbol "read_integer", ([], I64)]
+  ; fdecls = [ Sym.symbol "main", dolphin_main ]}
+
+let string_of_ast tprog = codegen_prog tprog |> Ll.string_of_prog
 
 
-let codegen_prog = raise Unimplemented
+let write_to_file (path: string) (contents: string) = 
+  (* Create the full path with the 'testfiles' directory *)
+  let dir = "llvm_outputs" in
+  let full_path = Filename.concat dir path in
+
+  (* Ensure the 'testfiles' directory exists, create it if it doesn't *)
+  if not (Sys.file_exists dir) then Sys.mkdir dir 0o755;
+
+  (* Write the file to the 'llvm_outputs' directory *)
+  let oc = open_out full_path in
+  Printf.fprintf oc "%s" contents;
+  close_out oc
+
+let compile_prog program =
+  try
+    let typedStmt, _ = Semant.typecheck_prog program in
+    let llvm_prog = codegen_prog typedStmt in
+    let llvm_ir_string = Ll.string_of_prog llvm_prog in
+    print_endline llvm_ir_string;
+    exit 0
+  with
+  | Invalid_argument msg ->
+    prerr_endline ("Typecheck failed: " ^ msg);
+    exit 1
+  | Unimplemented ->
+    prerr_endline "Unimplemented feature encountered.";
+    exit 1
+  | _ ->
+    prerr_endline "Unknown error during typecheck.";
+    exit 1

@@ -13,10 +13,10 @@ clean:
 	dune clean
 
 run: 
-	@echo "Testing semant"
-	
 	@echo "----------------------------------"
 	
 test: 
 	@echo "Testing semant"
-	./_build/default/semanttest.exe
+	
+	@echo "Testing codegen"
+	./_build/default/codegentest.exe

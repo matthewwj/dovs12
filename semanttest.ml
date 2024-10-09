@@ -175,6 +175,28 @@ let func_call_test2 = [
     }  
 ]
 
+(* if (5 < 10) a = 5; else b = 10; *)
+let if_then_else_test = 
+  [
+    Ast.CompoundStm {
+      stms = [
+    VarDeclStm { name = Ident {name = "a"}; tp = Some Int; body = Integer {int = 0L} };
+    VarDeclStm { name = Ident {name = "b"}; tp = Some Int; body = Integer {int = 0L} };
+    IfThenElseStm {
+      cond = BinOp {left = Integer {int = 5L}; op = Lt; right = Integer {int = 10L}};
+      thbr = ExprStm {expr = Some (Assignment {lvl = Var (Ident {name = "a"}); rhs = Integer {int = 5L}})};
+      elbro = Some (ExprStm {expr = Some (Assignment {lvl = Var (Ident {name = "b"}); rhs = Integer {int = 10L}})
+      })
+    }; 
+    ]};
+    Ast.ReturnStm {
+      ret = Ast.BinOp {
+        left = Ast.Integer {int = 2L};
+        op = Ast.Plus;
+        right = Ast.Integer {int = 2L};
+      };
+    }  
+  ]
 
 let test_typecheck program =
   try
@@ -213,6 +235,9 @@ let () =
   (* We need to look at these tests and the implementation *)
   print_endline "Testing shadowing: Positive test";
   test_typecheck test_shadowing;
+
+  print_endline "Testing ifthenelse: Positive test";
+  test_typecheck if_then_else_test;
 
   
   
