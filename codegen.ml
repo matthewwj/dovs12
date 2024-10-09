@@ -79,7 +79,7 @@ let rec codegen_expr env expr =
   | TAst.BinOp {left; op; right; _} -> (
     let cleft = codegen_expr env left in
     let cright = codegen_expr env right in
-    let paramtyp = type_of_expr left in
+    
     match op with 
     | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem ->
       emit_insn_with_fresh "temp_name" @@ Ll.Binop (binop_op_match op, Ll.I64, cleft, cright)
