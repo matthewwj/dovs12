@@ -272,6 +272,63 @@ let test_assignment_type_mismatch = [
   }
 ]
 
+let test_logic_short_circuit_pass = [
+  (* Declare a variable x with an initial boolean value *)
+  Ast.VarDeclStm {
+    name = Ast.Ident {name = "x"};
+    tp = Some Ast.Bool;
+    body = Ast.Boolean {bool = false};  (* x is false *)
+  };
+  
+  (* Declare a variable y with an initial boolean value *)
+  Ast.VarDeclStm {
+    name = Ast.Ident {name = "y"};
+    tp = Some Ast.Bool;
+    body = Ast.Boolean {bool = true};  (* y is true *)
+  };
+  
+  Ast.ExprStm {
+    expr = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));  (* x = false *)
+      op = Land;  (* Logical AND *)
+      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));  (* y = true *)
+    })
+  };
+  
+  (* Return statement for the function *)
+  Ast.ReturnStm {
+    ret = Ast.Integer {int = 0L};
+  }
+]
+
+let test_logic_short_circuit_fail = [
+  (* Declare a variable x with an initial boolean value *)
+  Ast.VarDeclStm {
+    name = Ast.Ident {name = "x"};
+    tp = Some Ast.Bool;
+    body = Ast.Boolean {bool = true};  
+  };
+  
+  (* Declare a variable y with an initial boolean value *)
+  Ast.VarDeclStm {
+    name = Ast.Ident {name = "y"};
+    tp = Some Ast.Bool;
+    body = Ast.Boolean {bool = true};  
+  };
+  
+  Ast.ExprStm {
+    expr = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));  (* x = true *)
+      op = Land;  (* Logical AND *)
+      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));  (* y = false *)
+    })
+  };
+  
+  (* Return statement for the function *)
+  Ast.ReturnStm {
+    ret = Ast.Integer {int = 0L};
+  }
+]
 
 let test_codegen program output_filename=
   try
@@ -349,3 +406,10 @@ let () =
 
   print_endline "Testing assignment type mismatch: Negative test";
   test_codegen test_assignment_type_mismatch "test15.ll";
+
+  print_endline "Testing short circuiting: Positive Test";
+  test_codegen test_logic_short_circuit_pass "test16.ll";
+
+  print_endline "Testing short circuiting: Negative Test";
+  test_codegen test_logic_short_circuit_fail "test17.ll";
+

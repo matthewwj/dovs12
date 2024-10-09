@@ -72,10 +72,39 @@ let rec codegen_expr env expr =
   let emit_insn_with_fresh hint inst = 
     let tmp = fresh_symbol hint in
     emit @@ CfgBuilder.add_insn (Some tmp, inst);
-    Ll.Id tmp in
+    Ll.Id tmp 
+  in
+  let cexp = codegen_expr env in
+  let rec logic_help left right is_or = 
+    let short_circuit_label = fresh_symbol "logic_short_circ" in
+    let cond_label = fresh_symbol "logic_next" in
+    let end_label = fresh_symbol "logic_end" in
+    let left_true, left_false =
+      if is_or then short_circuit_label, cond_label else cond_label, short_circuit_label
+    in
+    let short_circuit = if is_or then Ll.BConst true else Ll.BConst false in  
+    let left_op = cexp left in 
+    emit @@ CfgBuilder.term_block (Ll.Cbr (left_op, left_true, left_false));
+    emit @@ CfgBuilder.start_block short_circuit_label;
+    emit @@ CfgBuilder.term_block (Ll.Br end_label);
+    emit @@ CfgBuilder.start_block cond_label;
+    let right_op, from_label =
+      match right with
+      | TAst.BinOp {left; op = Lor; right; _} -> logic_help left right true
+      | TAst.BinOp {left; op = Land; right; _} -> logic_help left right false
+      | _ -> cexp right, cond_label  
+    in
+    emit @@ CfgBuilder.term_block (Ll.Br end_label);
+    emit @@ CfgBuilder.start_block end_label;
+    let tmp = fresh_symbol "logic_res" in
+    emit @@ CfgBuilder.add_insn (Some tmp, Ll.PhiNode (I1, [right_op, from_label; short_circuit, short_circuit_label]));
+    Ll.Id tmp, end_label
+  in
   match expr with
   | TAst.Integer {int} -> Ll.IConst64 int
   | TAst.Boolean {bool} -> Ll.BConst bool
+  | TAst.BinOp { left; op = Lor; right; _ } -> fst @@ logic_help left right true
+  | TAst.BinOp { left; op = Land; right; _ } -> fst @@ logic_help left right false
   | TAst.BinOp {left; op; right; _} -> (
     let cleft = codegen_expr env left in
     let cright = codegen_expr env right in
@@ -84,10 +113,7 @@ let rec codegen_expr env expr =
       emit_insn_with_fresh "temp_name" @@ Ll.Binop (binop_op_match op, Ll.I64, cleft, cright)
     | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge | TAst.Eq | TAst.NEq-> 
       emit_insn_with_fresh "temp_name" @@ Ll.Icmp (comparison_op_match op, Ll.I64, cleft, cright)
-    | TAst.Lor | TAst.Land ->
-      raise Unimplemented
-     (*Missing Logical operators still*)
-      )
+    | _ -> raise Unimplemented)
   | TAst.UnOp {op; operand; _} -> (
     let coperand = codegen_expr env operand in
     match op with
