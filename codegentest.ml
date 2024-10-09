@@ -273,58 +273,46 @@ let test_assignment_type_mismatch = [
 ]
 
 let test_logic_short_circuit_pass = [
-  (* Declare a variable x with an initial boolean value *)
   Ast.VarDeclStm {
     name = Ast.Ident {name = "x"};
     tp = Some Ast.Bool;
-    body = Ast.Boolean {bool = false};  (* x is false *)
+    body = Ast.Boolean {bool = false}; 
   };
-  
-  (* Declare a variable y with an initial boolean value *)
   Ast.VarDeclStm {
     name = Ast.Ident {name = "y"};
     tp = Some Ast.Bool;
-    body = Ast.Boolean {bool = true};  (* y is true *)
+    body = Ast.Boolean {bool = true};  
   };
-  
   Ast.ExprStm {
     expr = Some (Ast.BinOp {
-      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));  (* x = false *)
-      op = Land;  (* Logical AND *)
-      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));  (* y = true *)
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));  
+      op = Land;  
+      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));  
     })
   };
-  
-  (* Return statement for the function *)
   Ast.ReturnStm {
     ret = Ast.Integer {int = 0L};
   }
 ]
 
 let test_logic_short_circuit_fail = [
-  (* Declare a variable x with an initial boolean value *)
   Ast.VarDeclStm {
     name = Ast.Ident {name = "x"};
     tp = Some Ast.Bool;
     body = Ast.Boolean {bool = true};  
   };
-  
-  (* Declare a variable y with an initial boolean value *)
   Ast.VarDeclStm {
     name = Ast.Ident {name = "y"};
-    tp = Some Ast.Bool;
-    body = Ast.Boolean {bool = true};  
+    tp = Some Ast.Int;
+    body = Ast.Integer {int = 0L};  
   };
-  
   Ast.ExprStm {
     expr = Some (Ast.BinOp {
       left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));  (* x = true *)
-      op = Land;  (* Logical AND *)
-      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));  (* y = false *)
+      op = Land;  
+      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));  (* y = int *)
     })
   };
-  
-  (* Return statement for the function *)
   Ast.ReturnStm {
     ret = Ast.Integer {int = 0L};
   }
@@ -382,7 +370,7 @@ let () =
   print_endline "Testing function call: Positive test";
   test_codegen func_call_test2 "test7.ll";
   
-  print_endline "Testing variable declared in inner block, tried using in outer: Negative test";
+  print_endline "Testing variable declared in inner block, tried using in outer: Positive";
   test_codegen test_declared_var_in_inner_used_in_outer "test8.ll";
 
   print_endline "Testing var decls and assignments: Positive test";
