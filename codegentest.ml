@@ -138,7 +138,7 @@ let func_call_test = [
     Ast.ExprStm {
       expr = Some (
         Ast.Call {
-          fname = Ast.Ident {name = "read_integer"};
+          fname = Ast.Ident {name = "QQQ"};
           args = []
         }
       )
@@ -332,7 +332,7 @@ let () =
   test_codegen test_var_decl_and_assignment "test9.ll";
 
   (* We need to look at these tests and the implementation *)
-  print_endline "Testing shadowing: Positive test";
+  print_endline "Testing shadowing: Negative test";
   test_codegen test_shadowing "test10.ll"; 
 
   print_endline "Testing ifthenelse: Positive test";
@@ -349,5 +349,3 @@ let () =
 
   print_endline "Testing assignment type mismatch: Negative test";
   test_codegen test_assignment_type_mismatch "test15.ll";
-
-  compile_prog if_then_else_test;

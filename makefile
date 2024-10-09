@@ -16,7 +16,5 @@ run:
 	@echo "----------------------------------"
 	
 test: 
-	@echo "Testing semant"
-	
-	@echo "Testing codegen"
+	@echo "Testing semant and codegen"
 	./_build/default/codegentest.exe
