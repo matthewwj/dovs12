@@ -59,10 +59,10 @@ let simple_program = [
     init = None;
     cond = None;
     update = None;
-    body = Ast.ExprStm {
-      expr = None;
-    };
+    body = Ast.BreakStm;
   };
+  
+  Ast.BreakStm;
 
   Ast.ReturnStm {
     ret = Ast.BinOp {

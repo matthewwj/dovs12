@@ -147,17 +147,7 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
     (new_decl :: t_decls, Env.insert_local_decl current_env (Sym.symbol sname) tbody_type)
       ) ([], env) decls in
     (TAst.VarDeclStm (DeclBlock (List.rev typechecked_decls)), updated_env)
-    
-  (*| Ast.VarDeclStm {name = Ast.Ident {name = sname}; tp; body} ->
-    let tname = TAst.Ident {sym = Sym.symbol sname} in
-    let typeBody, tbody_type =
-      match tp with
-      | None -> infertype_expr env body
-      | Some btp -> typecheck_expr env body (typecheck_typ btp), typecheck_typ btp
-    in
-    (TAst.VarDeclStm {name = tname; tp = tbody_type; body = typeBody},
-    Env.insert_local_decl env (Sym.symbol sname) tbody_type) *)
-
+  
   | Ast.ExprStm {expr} ->
     (match expr with
     | Some expr ->
@@ -239,13 +229,13 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
     let tBody = fst (typecheck_statement temp_env body) in
     TAst.ForStm { init = tInit; cond = tCond; update = tUpdate; body = tBody }, env
 
-  
-
   | Ast.BreakStm ->
-    raise Unimplemented
+    if env.loop < 1 then raise (Invalid_argument (Errors.error_to_string (Errors.UnexpectedBreak)));
+    TAst.BreakStm, env
 
   | Ast.ContinueStm ->
-    raise Unimplemented
+    if env.loop < 1 then raise (Invalid_argument (Errors.error_to_string (Errors.UnexpectedContinue)));
+    TAst.ContinueStm, env
   
   
 

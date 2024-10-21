@@ -13,6 +13,8 @@ type error =
 | UnexpectedReturnType of { expected : TAst.typ; actual : TAst.typ}
 | Shadowing of {name : string} 
 | NotEndInRet
+| UnexpectedBreak
+| UnexpectedContinue
 (* other errors to be added as needed. *)
 
 (* Useful for printing errors *)
@@ -27,3 +29,5 @@ let error_to_string err =
   | UnexpectedReturnType {expected; actual} -> Printf.sprintf "Unexpected return type: expected %s but found %s." (TPretty.typ_to_string expected) (TPretty.typ_to_string actual)
   | NotEndInRet -> "The program does not end in a return statement."
   | Shadowing {name} -> Printf.sprintf "Shadowing error please update this error msg %s" name 
+  | UnexpectedBreak -> Printf.sprintf "Break not in loop"
+  | UnexpectedContinue -> Printf.sprintf "Continue not in loop"
