@@ -35,6 +35,35 @@ let simple_program = [
     };
   };
 
+  Ast.ForStm {
+    init = None;
+    cond = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+      op = Ast.Gt;
+      right = Ast.Integer {int = 0L};
+    });
+    update = Some (Ast.Assignment {
+      lvl = Ast.Var (Ast.Ident {name = "x"});
+      rhs = Ast.BinOp {
+        left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+        op = Ast.Minus;
+        right = Ast.Integer {int = 1L};
+      };
+    });
+    body = Ast.ExprStm {
+      expr = None;
+    };
+  };
+  
+  Ast.ForStm {
+    init = None;
+    cond = None;
+    update = None;
+    body = Ast.ExprStm {
+      expr = None;
+    };
+  };
+
   Ast.ReturnStm {
     ret = Ast.BinOp {
     left = Ast.Integer {int = 2L};

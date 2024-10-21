@@ -196,31 +196,50 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
   | Ast.WhileStm {cond; body} -> 
     let typed_while_cond = typecheck_expr env cond Bool in
     let env_in_loop = { env with loop = env.loop + 1 } in
-    let typed_while_body, _ = typecheck_statement env body in
+    let typed_while_body, _ = typecheck_statement env_in_loop body in
     
     (TAst.WhileStm {cond = typed_while_cond; body = typed_while_body}, env)
     
-    
-  | Ast.ForStm {init; cond; update; body} ->
-    let env_in_loop = { env with loop = env.loop + 1 } in
+  | Ast.ForStm { init; cond; update; body } ->
+    let tInit, temp_env =
+      match init with
+      | Some (Ast.FIDecl (DeclBlock decls)) ->
+        (* Inline the declaration block processing *)
+        let rec process_decls env decls typed_decls =
+          match decls with
+          | [] -> List.rev typed_decls, env
+          | decl :: rest ->
+            match decl with
+            | Ast.Declaration { name = Ident { name = sname }; tp; body } ->
+              let sym = Sym.symbol sname in
+              let tname = TAst.Ident { sym = sym } in
+              let t_body, inferred_type =
+                match tp with
+                | Some btp ->
+                    let expected_type = typecheck_typ btp in
+                    let t_body = typecheck_expr env body expected_type in
+                    t_body, expected_type
+                | None ->
+                    infertype_expr env body
+              in
+              let new_env = Env.insert_local_decl env sym inferred_type in
+              let t_decl = TAst.Declaration { name = tname; tp = inferred_type; body = t_body } in
+              process_decls new_env rest (t_decl :: typed_decls)
+        in
+        let typed_decls, new_env = process_decls env decls [] in
+        Some (TAst.FIDecl (TAst.DeclBlock typed_decls)), new_env
+      | Some (Ast.FIExpr expr) ->
+        let exp = fst (infertype_expr env expr) in
+        Some (TAst.FIExpr exp), env
+      | None -> None, env
+    in
+    let tCond = Option.map (fun cond -> typecheck_expr temp_env cond Bool) cond in
+    let tUpdate = Option.map (fun upd -> fst (infertype_expr temp_env upd)) update in
+    let temp_env = { temp_env with loop = env.loop + 1 } in
+    let tBody = fst (typecheck_statement temp_env body) in
+    TAst.ForStm { init = tInit; cond = tCond; update = tUpdate; body = tBody }, env
 
-    (*let typed_for_init, env_with_decl = match init with
-    | Some (Ast.FIExpr expr) -> 
-      Some (TAst.FIExpr (infertype_expr env_in_loop expr)), env_in_loop
-    
-      | Some Ast.FIDecl decls -> 
-      let typed_decl_block, new_env = typecheck_statement env_in_loop decls in 
-      Some (TAst.FIDecl decls), new_env
-    
-      | None -> None, env_in_loop in
-    *)
-
-    let typed_for_cond = match typed_for_cond with
-    | Some expr -> Some (typecheck_expr env_with_decl expr Bool) 
-    | None -> Some (TAst.Boolean {bool = true}) in
-
-    let typed_for_body, _ = typecheck_statement env body in
-    raise Unimplemented
+  
 
   | Ast.BreakStm ->
     raise Unimplemented
