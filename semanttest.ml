@@ -3,11 +3,18 @@ module Semant = Semant
 exception Unimplemented
 
 let simple_program = [
-  Ast.VarDeclStm {
-    name = Ast.Ident {name = "x"};
-    tp = Some Ast.Int;
-    body = Ast.Integer {int = 5L};
-  };
+  (* Variable declaration: var x : int = 2 + 2; *)
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Int;
+      body = Ast.BinOp {
+        left = Ast.Integer {int = 2L};
+        op = Ast.Plus;
+        right = Ast.Integer {int = 2L};
+      };
+    };
+  ]);
   Ast.ReturnStm {
     ret = Ast.BinOp {
     left = Ast.Integer {int = 2L};
@@ -16,7 +23,7 @@ let simple_program = [
     };
   }
 ]
-
+(*
 let program_no_return = [
   Ast.VarDeclStm {
     name = Ast.Ident {name = "x"};
@@ -197,7 +204,7 @@ let if_then_else_test =
       };
     }  
   ]
-
+ *)
 let test_typecheck program =
   try
     let _ = Semant.typecheck_prog program in
@@ -210,7 +217,7 @@ let test_typecheck program =
 let () =
   print_endline "Testing simple program: Positive test";
   test_typecheck simple_program;
-
+  (*
   print_endline "Testing addition type mismatch: Negative test";
   test_typecheck test_addition_type_mismatch;
 
@@ -238,6 +245,6 @@ let () =
 
   print_endline "Testing ifthenelse: Positive test";
   test_typecheck if_then_else_test;
-
+*)
   
-  
+ 

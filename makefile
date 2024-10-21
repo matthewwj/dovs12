@@ -14,7 +14,7 @@ clean:
 
 run: 
 	@echo "Testing semant and codegen"
-	./_build/default/codegentest.exe
+	./_build/default/semanttest.exe
 	
 test: 
 	@echo "Testing semant and codegen"

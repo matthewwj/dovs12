@@ -152,7 +152,7 @@ let rec codegen_expr env expr =
 let rec codegen_stmt env stm = 
   let emit = emit env in
   match stm with
-  | TAst.VarDeclStm {name = Ident {sym}; tp; body} ->
+  (*| TAst.VarDeclStm {name = Ident {sym}; tp; body} ->
     let rhs_val = codegen_expr env body in
     let llty = type_op_match tp in
     let local_sym = fresh_symbol (Sym.name sym) in
@@ -162,7 +162,7 @@ let rec codegen_stmt env stm =
     let new_locals = Sym.Table.add sym (llty, ptr) current_locals in
     let new_env = {env with locals = new_locals} in
     emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, rhs_val, ptr));
-    new_env
+    new_env*)
   | TAst.ExprStm {expr} ->
     (match expr with 
     | Some expr -> 
@@ -211,7 +211,7 @@ let rec codegen_stmt env stm =
     emit @@ CfgBuilder.term_block (Ll.Br (final_block));
     emit @@ CfgBuilder.start_block final_block;
     env_after
-
+  | _ -> raise Unimplemented
 
 let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 
