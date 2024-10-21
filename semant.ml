@@ -193,7 +193,42 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
     if ret_type != Int then raise (Invalid_argument (Errors.error_to_string (Errors.UnexpectedReturnType {actual = ret_type; expected = Int})));
     (TAst.ReturnStm {ret = typed_ret}, env)
   
-  | _ -> raise Unimplemented
+  | Ast.WhileStm {cond; body} -> 
+    let typed_while_cond = typecheck_expr env cond Bool in
+    let env_in_loop = { env with loop = env.loop + 1 } in
+    let typed_while_body, _ = typecheck_statement env body in
+    
+    (TAst.WhileStm {cond = typed_while_cond; body = typed_while_body}, env)
+    
+    
+  | Ast.ForStm {init; cond; update; body} ->
+    let env_in_loop = { env with loop = env.loop + 1 } in
+
+    (*let typed_for_init, env_with_decl = match init with
+    | Some (Ast.FIExpr expr) -> 
+      Some (TAst.FIExpr (infertype_expr env_in_loop expr)), env_in_loop
+    
+      | Some Ast.FIDecl decls -> 
+      let typed_decl_block, new_env = typecheck_statement env_in_loop decls in 
+      Some (TAst.FIDecl decls), new_env
+    
+      | None -> None, env_in_loop in
+    *)
+
+    let typed_for_cond = match typed_for_cond with
+    | Some expr -> Some (typecheck_expr env_with_decl expr Bool) 
+    | None -> Some (TAst.Boolean {bool = true}) in
+
+    let typed_for_body, _ = typecheck_statement env body in
+    raise Unimplemented
+
+  | Ast.BreakStm ->
+    raise Unimplemented
+
+  | Ast.ContinueStm ->
+    raise Unimplemented
+  
+  
 
 (* should use typecheck_statement to check the block of statements. *)
 and typecheck_statement_seq env stms =

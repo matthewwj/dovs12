@@ -11,6 +11,7 @@ type varOrFun =
 type environment = {
   vars_and_funs : varOrFun Sym.Table.t;
   errors : Errors.error list ref;
+  loop : int;
 }
 
 (* Create an initial environment with the given functions defined *)
@@ -19,7 +20,7 @@ let make_env function_types =
   let env = 
     List.fold_left (fun env (fsym, ftp) -> Sym.Table.add fsym (Fun ftp) env) emp function_types
   in
-  { vars_and_funs = env; errors = ref [] }
+  { vars_and_funs = env; errors = ref []; loop = 0 }
 
 (* Insert a local declaration into the environment *)
 let insert_local_decl env sym typ =

@@ -15,6 +15,26 @@ let simple_program = [
       };
     };
   ]);
+
+  (* While loop: while (x > 0) { x = x - 1; } *)
+  Ast.WhileStm {
+    cond = Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+      op = Ast.Gt;
+      right = Ast.Integer {int = 0L};
+    };
+    body = Ast.ExprStm {
+      expr = Some (Ast.Assignment {
+        lvl = Ast.Var (Ast.Ident {name = "x"});
+        rhs = Ast.BinOp {
+          left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+          op = Ast.Minus;
+          right = Ast.Integer {int = 1L};
+        };
+      });
+    };
+  };
+
   Ast.ReturnStm {
     ret = Ast.BinOp {
     left = Ast.Integer {int = 2L};
