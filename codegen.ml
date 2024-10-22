@@ -11,6 +11,7 @@ module Semant = Semant
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedInput of string
 
+
 type loops = {
   break_label: Sym.symbol;
   continue_label: Sym.symbol;
@@ -20,7 +21,6 @@ type cg_env =
   { cfgb: CfgBuilder.cfg_builder ref
   ; locals: (Ll.ty * Ll.operand) Sym.Table.t
   ; loop: loops list}
-
 
   (* Helper functions below*)
 let emit env b =
@@ -153,8 +153,6 @@ let rec codegen_expr env expr =
     emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
   )
 
-
-
 let rec codegen_stmt env stm = 
   let emit = emit env in
   match stm with
@@ -173,17 +171,6 @@ let rec codegen_stmt env stm =
     )
     env decls
 
-  (*| TAst.VarDeclStm {name = Ident {sym}; tp; body} ->
-    let rhs_val = codegen_expr env body in
-    let llty = type_op_match tp in
-    let local_sym = fresh_symbol (Sym.name sym) in
-    let ptr = Ll.Id local_sym in
-    emit @@ CfgBuilder.add_alloca (local_sym, llty);
-    let current_locals = env.locals in
-    let new_locals = Sym.Table.add sym (llty, ptr) current_locals in
-    let new_env = {env with locals = new_locals} in
-    emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, rhs_val, ptr));
-    new_env*)
   | TAst.ExprStm {expr} ->
     (match expr with 
     | Some expr -> 
@@ -234,18 +221,18 @@ let rec codegen_stmt env stm =
     env_after
   | TAst.BreakStm -> 
     emit @@ CfgBuilder.term_block (Ll.Br (List.hd env.loop).break_label);
-    emit @@ CfgBuilder.start_block (fresh_symbol "post break");
+    emit @@ CfgBuilder.start_block (fresh_symbol "post_break");
     env
 
   | TAst.ContinueStm -> 
     emit @@ CfgBuilder.term_block (Ll.Br (List.hd env.loop).continue_label);
-    emit @@ CfgBuilder.start_block (fresh_symbol "post continue");
+    emit @@ CfgBuilder.start_block (fresh_symbol "post_continue");
     env
 
   | TAst.WhileStm {cond; body} ->
-    let continue_label = fresh_symbol "while continue" in
-    let body_block = fresh_symbol "while body" in
-    let break_label = fresh_symbol "exit while loop" in
+    let continue_label = fresh_symbol "while_continue" in
+    let body_block = fresh_symbol "while_body" in
+    let break_label = fresh_symbol "exit_while_loop" in
     emit @@ CfgBuilder.term_block (Ll.Br continue_label);
     emit @@ CfgBuilder.start_block continue_label;
     let cond_val = codegen_expr env cond in
@@ -259,9 +246,42 @@ let rec codegen_stmt env stm =
     env
 
   | TAst.ForStm {init; cond; update; body} ->
-    raise Unimplemented
+    let continue_label = fresh_symbol "for_continue" in
+    let body_block = fresh_symbol "for_body" in
+    let break_label = fresh_symbol "exit_for_loop" in
 
-  | _ -> raise Unimplemented
+    let env_after_init = 
+      match init with
+      | Some (FIExpr expr) -> 
+          let _ = codegen_expr env expr in
+          env
+      | Some (FIDecl DeclBlock decls) -> 
+          let decl_statements = List.map (fun decl -> TAst.VarDeclStm (DeclBlock [decl])) decls in
+          List.fold_left codegen_stmt env decl_statements
+      | None -> 
+          env
+    in
+    emit @@ CfgBuilder.term_block (Ll.Br continue_label);
+    emit @@ CfgBuilder.start_block continue_label;
+    let cond_val = match cond with
+      | Some expr -> codegen_expr env_after_init expr
+      | None -> Ll.BConst true
+    in
+    emit @@ CfgBuilder.term_block (Ll.Cbr (cond_val, body_block, break_label));
+    emit @@ CfgBuilder.start_block body_block;
+    let new_env = {env_after_init with loop = { break_label; continue_label } :: env.loop} in
+    let env_after_body = codegen_stmt new_env body in
+
+    let env_after_update = match update with
+      | Some expr -> 
+          let _ = codegen_expr env_after_body expr in
+          env_after_body
+      | None -> env_after_body
+    in
+
+    emit @@ CfgBuilder.term_block (Ll.Br continue_label);
+    emit @@ CfgBuilder.start_block break_label;
+    env
 
 let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 

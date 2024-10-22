@@ -194,7 +194,6 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
     let tInit, temp_env =
       match init with
       | Some (Ast.FIDecl (DeclBlock decls)) ->
-        (* Inline the declaration block processing *)
         let rec process_decls env decls typed_decls =
           match decls with
           | [] -> List.rev typed_decls, env

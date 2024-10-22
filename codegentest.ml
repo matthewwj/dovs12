@@ -21,15 +21,42 @@ let simple_program = [
       op = Ast.Gt;
       right = Ast.Integer {int = 0L};
     };
+    body = Ast.WhileStm {
+      cond = Ast.BinOp {
+        left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+        op = Ast.Gt;
+        right = Ast.Integer {int = 0L};
+      };
+      body = Ast.ExprStm {
+        expr = Some (Ast.Assignment {
+          lvl = Ast.Var (Ast.Ident {name = "x"});
+          rhs = Ast.BinOp {
+            left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+            op = Ast.Minus;
+            right = Ast.Integer {int = 1L};
+          };
+        });
+      };
+    };
+  };
+
+  Ast.ForStm {
+    init = None;
+    cond = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+      op = Ast.Gt;
+      right = Ast.Integer {int = 0L};
+    });
+    update = Some (Ast.Assignment {
+      lvl = Ast.Var (Ast.Ident {name = "x"});
+      rhs = Ast.BinOp {
+        left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+        op = Ast.Minus;
+        right = Ast.Integer {int = 1L};
+      };
+    });
     body = Ast.ExprStm {
-      expr = Some (Ast.Assignment {
-        lvl = Ast.Var (Ast.Ident {name = "x"});
-        rhs = Ast.BinOp {
-          left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
-          op = Ast.Minus;
-          right = Ast.Integer {int = 1L};
-        };
-      });
+      expr = None;
     };
   };
 
@@ -56,14 +83,44 @@ let program_no_return = [
     tp = Some Ast.Int;
     body = Ast.Integer {int = 5L};
   };
-]
+]*)
 
 let program_returns_bool = [
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Int;
+      body = Ast.BinOp {
+        left = Ast.Integer {int = 2L};
+        op = Ast.Plus;
+        right = Ast.Integer {int = 2L};
+      };
+    };
+  ]);
+  Ast.ForStm {
+    init = None;
+    cond = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+      op = Ast.Gt;
+      right = Ast.Integer {int = 0L};
+    });
+    update = Some (Ast.Assignment {
+      lvl = Ast.Var (Ast.Ident {name = "x"});
+      rhs = Ast.BinOp {
+        left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+        op = Ast.Minus;
+        right = Ast.Integer {int = 1L};
+      };
+    });
+    body = Ast.ExprStm {
+      expr = None;
+    };
+  };
   Ast.ReturnStm {
-    ret = Ast.Boolean{bool = true}
+    ret = Ast.Lval (Ast.Var (Ast.Ident {name = "x"})); 
   }
 ]
-
+(*
 let test_addition_type_mismatch = [
   Ast.CompoundStm {
     stms = [
@@ -384,6 +441,9 @@ let compile_prog program =
 
 
 let () =
+
+  print_endline "Testing program returns bool program: Positive test";
+  test_codegen program_returns_bool "test1.ll";
 
   print_endline "Testing simple program: Positive test";
   test_codegen simple_program "test2.ll";
