@@ -62,7 +62,6 @@ let simple_program = [
     body = Ast.BreakStm;
   };
   
-  Ast.BreakStm;
 
   Ast.ReturnStm {
     ret = Ast.BinOp {

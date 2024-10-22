@@ -11,10 +11,16 @@ module Semant = Semant
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedInput of string
 
+type loops = {
+  break_label: Sym.symbol;
+  continue_label: Sym.symbol;
+}
 
 type cg_env = 
   { cfgb: CfgBuilder.cfg_builder ref
-  ; locals: (Ll.ty * Ll.operand) Sym.Table.t}
+  ; locals: (Ll.ty * Ll.operand) Sym.Table.t
+  ; loop: loops list}
+
 
   (* Helper functions below*)
 let emit env b =
@@ -130,7 +136,7 @@ let rec codegen_expr env expr =
       emit_insn_with_fresh "load" @@ Ll.Load (llty, llop);
     | None -> raise @@ UnexpectedInput "Variable not found"
   ) 
-  | TAst.Assignment {lvl = Var {ident = Ident {sym}; tp}; rhs; _} -> (
+  | TAst.Assignment {lvl = Var {ident = Ident {sym}; _}; rhs; _} -> (
     let crhs = codegen_expr env rhs in
     match Sym.Table.find_opt sym env.locals with
     | Some (llty, llop) ->
@@ -152,6 +158,21 @@ let rec codegen_expr env expr =
 let rec codegen_stmt env stm = 
   let emit = emit env in
   match stm with
+  | TAst.VarDeclStm (DeclBlock decls) ->
+    List.fold_left (fun env (TAst.Declaration {name = Ident {sym}; tp; body}) ->
+      let rhs_val = codegen_expr env body in
+      let llty = type_op_match tp in
+      let local_sym = fresh_symbol (Sym.name sym) in
+      let ptr = Ll.Id local_sym in
+      emit @@ CfgBuilder.add_alloca (local_sym, llty);
+      let current_locals = env.locals in
+      let new_locals = Sym.Table.add sym (llty, ptr) current_locals in
+      let new_env = { env with locals = new_locals } in
+      emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, rhs_val, ptr));      
+      new_env
+    )
+    env decls
+
   (*| TAst.VarDeclStm {name = Ident {sym}; tp; body} ->
     let rhs_val = codegen_expr env body in
     let llty = type_op_match tp in
@@ -211,6 +232,35 @@ let rec codegen_stmt env stm =
     emit @@ CfgBuilder.term_block (Ll.Br (final_block));
     emit @@ CfgBuilder.start_block final_block;
     env_after
+  | TAst.BreakStm -> 
+    emit @@ CfgBuilder.term_block (Ll.Br (List.hd env.loop).break_label);
+    emit @@ CfgBuilder.start_block (fresh_symbol "post break");
+    env
+
+  | TAst.ContinueStm -> 
+    emit @@ CfgBuilder.term_block (Ll.Br (List.hd env.loop).continue_label);
+    emit @@ CfgBuilder.start_block (fresh_symbol "post continue");
+    env
+
+  | TAst.WhileStm {cond; body} ->
+    let continue_label = fresh_symbol "while continue" in
+    let body_block = fresh_symbol "while body" in
+    let break_label = fresh_symbol "exit while loop" in
+    emit @@ CfgBuilder.term_block (Ll.Br continue_label);
+    emit @@ CfgBuilder.start_block continue_label;
+    let cond_val = codegen_expr env cond in
+    emit @@ CfgBuilder.term_block (Ll.Cbr (cond_val, body_block, break_label));
+    emit @@ CfgBuilder.start_block body_block;
+    let new_env = {env with loop = { break_label; continue_label } :: env.loop} in
+
+    let a = codegen_stmt new_env body in
+    emit @@ CfgBuilder.term_block (Ll.Br continue_label);
+    emit @@ CfgBuilder.start_block break_label;
+    env
+
+  | TAst.ForStm {init; cond; update; body} ->
+    raise Unimplemented
+
   | _ -> raise Unimplemented
 
 let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
@@ -218,7 +268,7 @@ let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 
 let codegen_prog tprog= 
   let open Ll in
-  let empty_environment = { cfgb = ref CfgBuilder.empty_cfg_builder; locals = Sym.Table.empty } in
+  let empty_environment = { cfgb = ref CfgBuilder.empty_cfg_builder; locals = Sym.Table.empty; loop = []} in
   let env = codegen_stmt_list empty_environment tprog in
   let cfg = CfgBuilder.get_cfg !(env.cfgb) in
   let dolphin_main = { fty = [], I64; param = []; cfg } in
@@ -255,5 +305,5 @@ let compile_prog program =
     prerr_endline "Unimplemented feature encountered.";
     exit 1
   | _ ->
-    prerr_endline "Unknown error during typecheck.";
+    prerr_endline "Unknown error encountered.";
     exit 1

@@ -1,12 +1,45 @@
-(*module Codegen = Codegen
+module Codegen = Codegen
 module Semant = Semant
 exception Unimplemented (* your code should eventually compile without this exception *)
 
 let simple_program = [
-  Ast.VarDeclStm {
-    name = Ast.Ident {name = "x"};
-    tp = Some Ast.Int;
-    body = Ast.Integer {int = 5L};
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Int;
+      body = Ast.BinOp {
+        left = Ast.Integer {int = 2L};
+        op = Ast.Plus;
+        right = Ast.Integer {int = 2L};
+      };
+    };
+  ]);
+
+  Ast.WhileStm {
+    cond = Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+      op = Ast.Gt;
+      right = Ast.Integer {int = 0L};
+    };
+    body = Ast.ExprStm {
+      expr = Some (Ast.Assignment {
+        lvl = Ast.Var (Ast.Ident {name = "x"});
+        rhs = Ast.BinOp {
+          left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+          op = Ast.Minus;
+          right = Ast.Integer {int = 1L};
+        };
+      });
+    };
+  };
+
+  Ast.WhileStm {
+    cond = Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
+      op = Ast.Gt;
+      right = Ast.Integer {int = 0L};
+    };
+    body = Ast.BreakStm;
   };
   Ast.ReturnStm {
     ret = Ast.BinOp {
@@ -16,7 +49,7 @@ let simple_program = [
     };
   }
 ]
-
+(*
 let program_no_return = [
   Ast.VarDeclStm {
     name = Ast.Ident {name = "x"};
@@ -317,7 +350,7 @@ let test_logic_short_circuit_fail = [
     ret = Ast.Integer {int = 0L};
   }
 ]
-
+*)
 let test_codegen program output_filename=
   try
     let typedStmt, _ = Semant.typecheck_prog program in
@@ -328,7 +361,7 @@ let test_codegen program output_filename=
   with
   | Invalid_argument msg -> print_endline ("Typecheck failed: " ^ msg)
   | Unimplemented -> print_endline "Unimplemented feature encountered."
-  | _ -> print_endline "Unknown error during typecheck."
+  | _ -> print_endline "Unknown error encountered (probably unimplemented)."
 
 
 let compile_prog program =
@@ -354,7 +387,7 @@ let () =
 
   print_endline "Testing simple program: Positive test";
   test_codegen simple_program "test2.ll";
-
+(*
   print_endline "Testing addition type mismatch: Negative test";
   test_codegen test_addition_type_mismatch "test3.ll";
 
