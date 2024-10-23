@@ -1,7 +1,7 @@
 declare void @print_integer(i64)
 declare i64 @read_integer()
 
-define i64 @main () {
+define i64 @dolphin_main () {
  %x11 = alloca i64
  %temp_name10 = add i64 2, 2
  store i64 %temp_name10, i64* %x11

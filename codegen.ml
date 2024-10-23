@@ -150,7 +150,12 @@ let rec codegen_expr env expr =
       let carg = codegen_expr env arg in
       let carg_ty = type_of_expr arg in
       (carg_ty, carg)) args in
-    emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
+    match llty with
+    | Ll.Void ->
+        emit @@ CfgBuilder.add_insn (None, Ll.Call (llty, Ll.Gid sym, carglist));
+        Ll.BConst false
+    | _ ->
+        emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
   )
 
 let rec codegen_stmt env stm = 
@@ -278,7 +283,6 @@ let rec codegen_stmt env stm =
           env_after_body
       | None -> env_after_body
     in
-
     emit @@ CfgBuilder.term_block (Ll.Br continue_label);
     emit @@ CfgBuilder.start_block break_label;
     env
@@ -293,7 +297,7 @@ let codegen_prog tprog=
   let cfg = CfgBuilder.get_cfg !(env.cfgb) in
   let dolphin_main = { fty = [], I64; param = []; cfg } in
   { tdecls = [] ; extgdecls = [] ; gdecls = [] ; extfuns = [Sym.symbol "print_integer", ([I64], Void); Sym.symbol "read_integer", ([], I64)]
-  ; fdecls = [ Sym.symbol "main", dolphin_main ]}
+  ; fdecls = [ Sym.symbol "dolphin_main", dolphin_main ]}
 
 
 

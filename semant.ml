@@ -132,22 +132,42 @@ and typecheck_expr env expr tp =
 (* should check the validity of a statement and produce the corresponding typed statement. Should use typecheck_expr and/or infertype_expr as necessary. *)
 let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.environment =
   match stm with
-  | Ast.VarDeclStm (DeclBlock decls) -> 
+  (*| Ast.VarDeclStm (DeclBlock decls) -> 
     let typechecked_decls, updated_env =
       List.fold_left (fun (t_decls, current_env) decl ->
       match decl with
       | Ast.Declaration {name = Ast.Ident {name = sname}; tp; body} ->
         let tname = TAst.Ident {sym = Sym.symbol sname} in
         let typeBody, tbody_type =
-      match tp with
-      | None -> infertype_expr env body
-      | Some btp -> typecheck_expr env body (typecheck_typ btp), typecheck_typ btp
-    in
+        match tp with
+          | None -> infertype_expr env body
+          | Some btp -> typecheck_expr env body (typecheck_typ btp), typecheck_typ btp
+        in
     let new_decl = TAst.Declaration {name = tname; tp = tbody_type; body = typeBody} in
     (new_decl :: t_decls, Env.insert_local_decl current_env (Sym.symbol sname) tbody_type)
       ) ([], env) decls in
     (TAst.VarDeclStm (DeclBlock (List.rev typechecked_decls)), updated_env)
-  
+  *)
+  | Ast.VarDeclStm (DeclBlock decls) -> 
+    let typechecked_decls, updated_env =
+      List.fold_left (fun (t_decls, current_env) decl ->
+      match decl with
+      | Ast.Declaration {name = Ast.Ident {name = sname}; tp; body} ->
+        let tname = TAst.Ident {sym = Sym.symbol sname} in
+        let typeBody, inferred_type = 
+        match tp with
+          | None -> infertype_expr current_env body
+          | Some expected_type -> 
+            let body_type = typecheck_typ expected_type in
+            let typechecked_body = typecheck_expr current_env body body_type in
+            typechecked_body, body_type
+        in
+        let new_decl = TAst.Declaration {name = tname; tp = inferred_type; body = typeBody} in
+        let updated_env = Env.insert_local_decl current_env (Sym.symbol sname) inferred_type in
+        (new_decl :: t_decls, updated_env))
+        ([], env) decls in
+    (TAst.VarDeclStm (DeclBlock (List.rev typechecked_decls)), updated_env)
+    
   | Ast.ExprStm {expr} ->
     (match expr with
     | Some expr ->
