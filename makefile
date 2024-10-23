@@ -21,5 +21,5 @@ run:
 test: 
 	@echo "Testing semant and codegen"
 	./_build/default/codegentest.exe
-	clang $(OUTPUT_DIR)/test5.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output2
-	./$(OUTPUT_DIR)/output2
+	clang $(OUTPUT_DIR)/testreadint.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output1
+	./$(OUTPUT_DIR)/output1

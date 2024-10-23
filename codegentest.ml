@@ -121,7 +121,21 @@ let program_returns_bool = [
   }
 ]
 
-
+let read_integer_test = [
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Int;
+      body = Ast.Call {
+          fname = Ast.Ident {name = "read_integer"};
+          args = [];
+        };
+    };
+  ]);
+  Ast.ReturnStm {
+    ret = Ast.Lval (Ast.Var (Ast.Ident {name = "x"})); 
+  }
+]
 
 
 (*
@@ -577,6 +591,9 @@ let () =
 
   print_endline "Testing advanced for loop program: Positive test";
   test_codegen advanced_for_program "test5.ll";
+
+  print_endline "Testing read integer program: Positive test";
+  test_codegen read_integer_test "testreadint.ll";
 (*
   print_endline "Testing addition type mismatch: Negative test";
   test_codegen test_addition_type_mismatch "test3.ll";
