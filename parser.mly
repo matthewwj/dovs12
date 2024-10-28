@@ -46,11 +46,11 @@
 
 %%
 single_token:
-| i = INT { (INT i, $startpos) }
+| i = INT { (INT, $startpos) }
 | PLUS    { (PLUS, $startpos) }
 | MINUS   { (MINUS, $startpos) }
-| TIMES   { (TIMES, $startpos) }
-| DIVIDE  { (DIVIDE, $startpos) }
+| MUL   { (MUL, $startpos) }
+| DIV  { (DIV, $startpos) }
 | LPAREN  { (LPAREN, $startpos) }
 | RPAREN  { (RPAREN, $startpos) }
 

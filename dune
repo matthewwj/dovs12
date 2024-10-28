@@ -1,14 +1,26 @@
-(executable
- (name semanttest)
- (modules semanttest semant ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings)
- (libraries printbox)
- (flags (:standard -w -37)))
+;(executable
+; (name semanttest)
+; (modules semanttest semant ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings location)
+; (libraries printbox)
+; (flags (:standard -w -37)))
 
-(executable
-(name codegentest)
-(modules codegentest codegen semant ast typedAst symbol env errors typedPretty pretty runTimeBindings cfgBuilder ll)
- (libraries printbox)
- (flags (:standard -w -37)))
+;(executable
+;(name codegentest)
+;(modules codegentest  codegen semant ast typedAst symbol env errors typedPretty pretty runTimeBindings cfgBuilder ll location)
+; (libraries printbox)
+; (flags (:standard -w -37)))
+
+(library
+ (name lib)
+ (libraries printbox printbox-text))
+ (ocamllex lexer)
+
+(menhir
+(merge_into parser)
+(modules parser)
+(flags --explain --dump)
+)
+
 
 (env
  (dev

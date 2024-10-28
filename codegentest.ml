@@ -1,7 +1,7 @@
 module Codegen = Codegen
 module Semant = Semant
 exception Unimplemented (* your code should eventually compile without this exception *)
-
+(*
 
 (* Positive test: Multiple variable declarations in one statement *)
 let test_multi_var_decl_positive = [
@@ -736,3 +736,4 @@ let () =
 
 
 
+*)

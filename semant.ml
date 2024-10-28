@@ -7,7 +7,7 @@ module RunTimeBindings = RunTimeBindings
 
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnimpRtrError (* temporary exception for no return error *)
-
+(*
 let typecheck_typ = function
   | Ast.Int -> TAst.Int
   | Ast.Bool -> TAst.Bool
@@ -272,3 +272,4 @@ let typecheck_prog prg : TAst.program * Errors.error list =
   end;
   let tProg, env_res = typecheck_statement_seq env prg in
   tProg, !(env_res.errors)
+*)

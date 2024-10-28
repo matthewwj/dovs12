@@ -11,7 +11,7 @@ module Semant = Semant
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedInput of string
 
-
+(*
 type loops = {
   break_label: Sym.symbol;
   continue_label: Sym.symbol;
@@ -331,3 +331,6 @@ let compile_prog program =
   | _ ->
     prerr_endline "Unknown error encountered.";
     exit 1
+
+
+*)

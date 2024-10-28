@@ -1,7 +1,7 @@
 module Semant = Semant
 
 exception Unimplemented
-
+(*
 let simple_program = [
   (* Variable declaration: var x : int = 2 + 2; *)
   Ast.VarDeclStm (DeclBlock [
@@ -295,4 +295,4 @@ let () =
   test_typecheck if_then_else_test;
 *)
   
- 
+ *)
