@@ -39,9 +39,16 @@
 
 %start <(token * Lexing.position) list> tokens
 
+%nonassoc COLON QUESTIONMARK
+%left LOR LAND LNOT
+%nonassoc EQ NEQ
+%nonassoc LT LE GT GE
 %left ADD MINUS
-%left MUL DIV
-
+%left MUL DIV REM
+%right LENGTHOF
+%right ASSIGN 
+%right DOT LBRACKET
+%right LPAREN
 
 
 %%
