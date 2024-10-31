@@ -1,8 +1,8 @@
-;(executable
-; (name semanttest)
-; (modules semanttest semant ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings location)
-; (libraries printbox)
-; (flags (:standard -w -37)))
+(executable
+ (name parserrun)
+ (modules parserrun parser lexer semanttest semant ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings location)
+ (libraries printbox printbox-text)
+ (flags (:standard -w -37)))
 
 ;(executable
 ;(name codegentest)
@@ -10,18 +10,20 @@
 ; (libraries printbox)
 ; (flags (:standard -w -37)))
 
-(library
- (name lib)
- (libraries printbox printbox-text))
- (ocamllex lexer)
 
-(menhir
-(merge_into parser)
-(modules parser)
-(flags --explain --dump)
+;(library
+; (name dolphin)
+; (libraries printbox printbox-text))
+
+(ocamllex lexer)
+
+(menhir 
+       (merge_into parser)       
+       (modules parser)
+       (flags --explain --dump)
 )
 
+ (env
+  (dev
+    (flags (:standard -warn-error -A))))
 
-(env
- (dev
-  (flags (:standard -warn-error -A))))

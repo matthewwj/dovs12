@@ -1,4 +1,13 @@
-let parse_from_file ?(with_positions = true) file_name =
+module Errors = Errors
+
+let _ = 
+  let file_in = open_in "/Users/matthewwestergaard/Desktop/dovs/compiler/input.txt"
+ in 
+  let lex_buf = Lexing.from_channel file_in in 
+  let parse_res = Parser.main Lexer.read lex_buf in
+  PrintBox_text.output stdout (Pretty.program_to_tree parse_res)
+
+(*let parse_from_file ?(with_positions = true) file_name =
   let file_in = open_in file_name in
   let lex_buf = Lexing.from_channel ~with_positions file_in in
   try Parser.main Lexer.read lex_buf with
@@ -14,4 +23,4 @@ let parse_from_file ?(with_positions = true) file_name =
       ^ "\""
     in
     raise @@ Errors.ParseErr err
-;;
+;; *)

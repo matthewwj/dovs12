@@ -43,17 +43,13 @@
 %start <Ast.expr> prog
 *)
 
-%left COMMA
-%right ASSIGN
-%right QUESTIONMARK COLON
-%left LOR
+%left LOR 
 %left LAND
 %nonassoc EQ NEQ
-%nonassoc LT LE GT GE
+%nonassoc LT LE GT GE 
 %left PLUS MINUS
 %left MUL DIV REM
-%right LNOT LENGTHOF
-%left DOT LBRACKET RBRACKET LPAREN RPAREN
+%left LNOT
 
 
 
