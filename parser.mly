@@ -104,33 +104,6 @@ exp:
 | fname = IDENT LPAREN args = separated_list(COMMA, exp) RPAREN { Call {fname = Ident {name = fname; loc = l $loc}; args = args; loc = l $loc} }
 | LPAREN e = exp RPAREN {e}
 
-(*
-| i = INT {Integer {int = i; loc = $startpos}}
-| left=exp PLUS right=exp  { BinOp {op = Plus {loc = $startpos}; left; right} }
-| left=exp MUL right=exp  { BinOp {op = MUL {pos = $startpos}; left; right} }
-| left=exp DIV right=exp  { BinOp {op = DIV {pos = $startpos}; left; right} }
-| left=exp MINUS right=exp  { BinOp {op = Minus {pos = $startpos}; left; right} }
-*)
-(*
-prog:
-  e=exp EOF { e }
-*)
-
-(*
-single_token:
-| i = INT { (INT, $startpos) }
-| PLUS    { (PLUS, $startpos) }
-| MINUS   { (MINUS, $startpos) }
-| MUL   { (MUL, $startpos) }
-| DIV  { (DIV, $startpos) }
-| LPAREN  { (LPAREN, $startpos) }
-| RPAREN  { (RPAREN, $startpos) }
-
-tokens:
- tks = single_token* EOF  { tks }
-*)
-
-
 
 type_helper:
 | INT {Int {loc = l $loc}}
