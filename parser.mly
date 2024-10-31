@@ -43,29 +43,28 @@
 %start <Ast.expr> prog
 *)
 
+%right ASSIGN 
 %nonassoc COLON QUESTIONMARK
 %left LOR LAND LNOT
 %nonassoc EQ NEQ
 %nonassoc LT LE GT GE
-%left ADD MINUS
+%left PLUS MINUS
 %left MUL DIV REM
 %right LENGTHOF
-%right ASSIGN 
 %right DOT LBRACKET
 %right LPAREN
+
 
 %nonassoc IF
 %nonassoc ELSE
 
-(*%type <exp> exp
-*)
+
+%type <expr> exp
 %type <statement list> stmts
 %type <statement> stmt
-(*
 %type <single_declaration> decl 
 %type <declaration_block> decl_block 
-%type <exp option> option(exp)
-*)
+%type <expr option> option(exp)
 %start <program> main
 
 
@@ -124,25 +123,40 @@ tokens:
 *)
 
 
-(*
+
 type_helper:
-|
+| INT {Int {loc = l $loc}}
+| BOOL {Bool {loc = l $loc}}
 
 type_def:
-|
+| COLON t = type_helper {Some(t)}
+| {None}
 
 decl:
-|
+| name = ident tp = type_def ASSIGN e = exp
+    {Declaration {name; tp; body = e; loc = l $loc}}
 
 decl_block:
-|
+ VAR e = separated_list(COMMA, decl) {DeclBlock {declarations = e; loc = l $loc}}
 
 for_init:
-|
-*)
+| e = exp {FIExpr e}
+| e = decl_block {FIDecl e}
+
 
 stmt:
  | RETURN e = exp SEMICOLON { ReturnStm {ret = e; loc = l $loc}}
+ | e = decl_block SEMICOLON
+    {VarDeclStm e}
+ | LBRACE s = stmts RBRACE {CompoundStm {stms = s; loc = l $loc}}
+ | e = option(exp) SEMICOLON {ExprStm {expr = e; loc = l $loc}}
+ | IF LPAREN cond = exp RPAREN thbr = stmt elbro = option(ELSE elseStmt = stmt {elseStmt})
+    {IfThenElseStm {cond; thbr; elbro; loc = l $loc}}
+ | WHILE LPAREN e = exp RPAREN s = stmt {WhileStm {cond = e; body = s; loc = l $loc}}
+ | FOR LPAREN init = option(for_init) SEMICOLON cond = option(exp) SEMICOLON update = option(exp) RPAREN body = stmt
+    {ForStm {init; cond; update; body; loc = l $loc}}
+ | BREAK SEMICOLON {BreakStm {loc = l $loc}}
+ | CONTINUE SEMICOLON {ContinueStm {loc = l $loc}}
 
 stmts:
 r = list(stmt) 
