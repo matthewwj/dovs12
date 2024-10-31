@@ -92,8 +92,6 @@
 | MINUS {Neg {loc = l $loc}}
 | LNOT {Lnot {loc = l $loc}}
 
-%inline lval:
-| i = IDENT { Var (Ident {name = i; loc = l $loc}) }
 
 exp:
 | i = INT_LIT {Integer {int = i; loc = l $loc}}
@@ -103,6 +101,7 @@ exp:
 | op = unop i = exp {UnOp {op; operand = i; loc = l $loc}}
 | fname = IDENT LPAREN args = separated_list(COMMA, exp) RPAREN { Call {fname = Ident {name = fname; loc = l $loc}; args = args; loc = l $loc} }
 | LPAREN e = exp RPAREN {e}
+| i = IDENT {Lval (Var (Ident {name = i; loc = l $loc})) }
 
 
 type_helper:
