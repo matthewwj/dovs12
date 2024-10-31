@@ -92,9 +92,17 @@
 | MINUS {Neg {loc = l $loc}}
 | LNOT {Lnot {loc = l $loc}}
 
+%inline lval:
+| i = IDENT { Var (Ident {name = i; loc = l $loc}) }
 
 exp:
-i = INT_LIT {Integer {int = i; loc = l $loc}}
+| i = INT_LIT {Integer {int = i; loc = l $loc}}
+| FALSE {Boolean {bool = false; loc = l $loc}}
+| TRUE {Boolean {bool = true; loc = l $loc}}
+| left = exp op = binop right = exp {BinOp {left; op; right; loc = l $loc}}
+| op = unop i = exp {UnOp {op; operand = i; loc = l $loc}}
+| fname = IDENT LPAREN args = separated_list(COMMA, exp) RPAREN { Call {fname = Ident {name = fname; loc = l $loc}; args = args; loc = l $loc} }
+| LPAREN e = exp RPAREN {e}
 
 (*
 | i = INT {Integer {int = i; loc = $startpos}}
