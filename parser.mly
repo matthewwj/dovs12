@@ -1,5 +1,5 @@
 %{
-
+    open Ast
 %}
 
 // end of file
@@ -37,7 +37,8 @@
 // types
 %token INT BOOL STRING BYTE VOID RECORD
 
-%start <(token * Lexing.position) list> tokens
+(*%start <(token * Lexing.position) list> tokens*)
+%start <Ast.expr> prog
 
 %nonassoc COLON QUESTIONMARK
 %left LOR LAND LNOT
@@ -52,6 +53,21 @@
 
 
 %%
+
+exp:
+(*
+| i = INT {Integer {int = i; loc = $startpos}}
+| left=exp PLUS right=exp  { BinOp {op = Plus {loc = $startpos}; left; right} }
+| left=exp MUL right=exp  { BinOp {op = MUL {pos = $startpos}; left; right} }
+| left=exp DIV right=exp  { BinOp {op = DIV {pos = $startpos}; left; right} }
+| left=exp MINUS right=exp  { BinOp {op = Minus {pos = $startpos}; left; right} }
+*)
+
+prog:
+  e=exp EOF { e }
+
+
+(*
 single_token:
 | i = INT { (INT, $startpos) }
 | PLUS    { (PLUS, $startpos) }
@@ -63,4 +79,4 @@ single_token:
 
 tokens:
  tks = single_token* EOF  { tks }
- 
+*)
