@@ -1,7 +1,9 @@
 module Errors = Errors
-
+module Codegen = Codegen
+module Semant = Semant
+(*
 let _ = 
-  let file_in = open_in "/Users/matthewwestergaard/Desktop/dovs/compiler/input.txt"
+  let file_in = open_in "/workspaces/dovs/phase1/dovs12/input.txt"
  in 
   let lex_buf = Lexing.from_channel file_in in 
   let parse_res = Parser.main Lexer.read lex_buf in
@@ -23,4 +25,17 @@ let _ =
       ^ "\""
     in
     raise @@ Errors.ParseErr err
-;; *)
+;;*)
+*)
+let _ = 
+  let file_in = open_in "/workspaces/dovs/phase1/dovs12/input1.txt" in 
+  let lex_buf = Lexing.from_channel file_in in 
+  let parse_res = Parser.main Lexer.read lex_buf in
+  let (typedStmt, env) = Semant.typecheck_prog parse_res in
+  PrintBox_text.output stdout (Pretty.program_to_tree parse_res);
+  let llvm_prog = Codegen.codegen_prog typedStmt in
+  let llvm_ir_string = Ll.string_of_prog llvm_prog in
+  let output_filename = "output.ll" in
+  Codegen.write_to_file output_filename llvm_ir_string;
+  print_endline ("Writing LLVM IR to " ^ output_filename);
+  exit 0

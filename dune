@@ -1,6 +1,6 @@
 (executable
  (name parserrun)
- (modules parserrun parser lexer semanttest semant ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings location)
+ (modules parserrun parser lexer semanttest semant codegen cfgBuilder ll ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings location)
  (libraries printbox printbox-text)
  (flags (:standard -w -37)))
 

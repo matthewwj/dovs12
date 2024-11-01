@@ -2,16 +2,35 @@
 1 + 2;
 true;
 !false; 
-//a = x;
-//if (x < 3) { x = x + 1; }
-// else { x = 3; }
-//for(var i = 0, n :int= 2; i < n; i = i + 1) { break; }
+var x = 1;
+var a = x;
+var a = x;
+if (x < 3) { x = x + 1; }
+else { x = 3; }
+for(var i = 0, n :int= 2; i < n; i = i + 1) { break; }
 func(1, a); { var x = true; return x; }
 calculate(a, b, 1 + 2);
 print();
-//a = (b + c) * (d - 1) / 2;
-//while (x < 5) { for(var i:int = 0; i < x; i = i + 1) { x = x + i; } }
-//if (a == 4) { if (b != 2) { b = 3; } }
+a = (b + c) * (d - 1) / 2;
+while (x < 5) { for(var i:int = 0; i < x; i = i + 1) { x = x + i; } }
+if (a == 4) { if (b != 2) { b = 3; } }
 var x:int = 10, y:bool = false;
 ;;;;
 return 1; 
+if (a > 0 && (b < 5 || c == 10)) { while (a < b) { a = a + 1; } }
+calculate(1, multiply(a + b, 3), (x - y) * z);
+while (x < 5) { }
+for (var i = 0; i < 10; i = i + 1) { }
+for (var i = 0; i < 5; i = i + 1) {
+  if (i == 2) { continue; }
+  if (i == 4) { break; }
+}
+a = b = c + d;
+a = (b + c) * d + (e / f);
+;;; a = 5; ;; var b = 10; ;;; return b;
+if (a < b && (c > d || e == f)) { /* ... */ }
+calculate(1 + func(multiply(a, b)), divide(c, 2));
+var x = 1 + 1;
+if (x > 3) {x = 3;} else {x = 5;}
+{if (n > 0) {r = 10; return 1; } else continue; {} }
+return 1;

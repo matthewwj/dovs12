@@ -43,6 +43,7 @@
 %start <Ast.expr> prog
 *)
 
+
 %left LOR 
 %left LAND
 %nonassoc EQ NEQ
@@ -50,6 +51,7 @@
 %left PLUS MINUS
 %left MUL DIV REM
 %left LNOT
+%left ASSIGN
 
 
 
@@ -88,6 +90,7 @@
 
 
 exp:
+| i = IDENT ASSIGN e = exp %prec ASSIGN { Assignment {lvl = Var (Ident {name = i; loc = l $loc}); rhs = e; loc = l $loc} }
 | i = INT_LIT {Integer {int = i; loc = l $loc}}
 | FALSE {Boolean {bool = false; loc = l $loc}}
 | TRUE {Boolean {bool = true; loc = l $loc}}
@@ -120,8 +123,7 @@ for_init:
 
 stmt:
  | RETURN e = exp SEMICOLON { ReturnStm {ret = e; loc = l $loc}}
- | e = decl_block SEMICOLON
-    {VarDeclStm e}
+ | e = decl_block SEMICOLON {VarDeclStm e}
  | LBRACE s = stmts RBRACE {CompoundStm {stms = s; loc = l $loc}}
  | e = option(exp) SEMICOLON {ExprStm {expr = e; loc = l $loc}}
  | IF LPAREN cond = exp RPAREN thbr = stmt elbro = option(ELSE elseStmt = stmt {elseStmt})
