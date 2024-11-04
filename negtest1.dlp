@@ -1,0 +1,4 @@
+/* else without if */
+
+var x = 1 + 1;
+else { x = x + x}
