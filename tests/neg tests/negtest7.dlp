@@ -1,0 +1,3 @@
+/* non existant key word */
+var y = 2 + 2;
+bob y;

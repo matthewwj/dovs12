@@ -1,0 +1,3 @@
+/* expression missing right hand */
+
+var y = 2 - ;
