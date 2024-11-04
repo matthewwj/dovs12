@@ -52,6 +52,7 @@
 %left MUL DIV REM
 %left LNOT
 %left ASSIGN
+%nonassoc ELSE
 
 
 
@@ -122,12 +123,21 @@ for_init:
 
 
 stmt:
+
+ | IF LPAREN cond = exp RPAREN thbr = stmt ELSE elbr = stmt 
+    {IfThenElseStm {cond; thbr; elbro = Some elbr; loc = l $loc}}
+ 
+ | IF LPAREN cond = exp RPAREN thbr = stmt %prec ELSE 
+    {IfThenElseStm {cond; thbr; elbro = None; loc = l $loc}}
+
+(* | IF LPAREN cond = exp RPAREN  thbr = stmt elbro = option( ELSE elseStmt = stmt {elseStmt})
+    {IfThenElseStm {cond; thbr; elbro; loc = l $loc}}
+    *)
+
  | RETURN e = exp SEMICOLON { ReturnStm {ret = e; loc = l $loc}}
  | e = decl_block SEMICOLON {VarDeclStm e}
  | LBRACE s = stmts RBRACE {CompoundStm {stms = s; loc = l $loc}}
  | e = option(exp) SEMICOLON {ExprStm {expr = e; loc = l $loc}}
- | IF LPAREN cond = exp RPAREN thbr = stmt elbro = option(ELSE elseStmt = stmt {elseStmt})
-    {IfThenElseStm {cond; thbr; elbro; loc = l $loc}}
  | WHILE LPAREN e = exp RPAREN s = stmt {WhileStm {cond = e; body = s; loc = l $loc}}
  | FOR LPAREN init = option(for_init) SEMICOLON cond = option(exp) SEMICOLON update = option(exp) RPAREN body = stmt
     {ForStm {init; cond; update; body; loc = l $loc}}

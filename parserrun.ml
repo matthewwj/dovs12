@@ -28,7 +28,7 @@ let _ =
 ;;*)
 *)
 let _ = 
-  let file_in = open_in "/workspaces/dovs/phase1/dovs12/input1.txt" in 
+  let file_in = open_in "/Users/matthewwestergaard/Desktop/dovs/compiler/input1.txt" in 
   let lex_buf = Lexing.from_channel file_in in 
   let parse_res = Parser.main Lexer.read lex_buf in
   let (typedStmt, env) = Semant.typecheck_prog parse_res in
