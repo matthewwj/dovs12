@@ -1,21 +1,3 @@
-let test_var_decl_and_assignment = [
-  Ast.CompoundStm {
-    stms = [
-      Ast.VarDeclStm (DeclBlock [
-        Declaration {
-          name = Ast.Ident {name = "x"};
-          tp = Some Ast.Int;
-          body = Ast.Integer {int = 5L};
-        };
-      ]);
-      Ast.ExprStm {expr = Some (Ast.Assignment {lvl = Ast.Var (Ast.Ident {name = "x"}); rhs = Ast.Integer {int = 10L}})}
-    ];
-  };
-  Ast.ReturnStm {
-    ret = Ast.BinOp {
-    left = Ast.Integer {int = 2L};
-    op = Ast.Plus;
-    right = Ast.Integer {int = 2L};
-    };
-  }
-]
+/* compund sstatement test */
+{var x = 5; x = 10;}
+retrun x;
