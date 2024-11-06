@@ -1,0 +1,17 @@
+let test_func_call_arg_mismatch = [
+  Ast.ExprStm {
+    expr = Some (
+      Ast.Call {
+        fname = Ast.Ident {name = "print_integer"};
+        args = [Ast.Boolean {bool = true}] (* Incorrect argument type *)
+      }
+    )
+  };
+  Ast.ReturnStm {
+    ret = Ast.BinOp {
+      left = Ast.Integer {int = 2L};
+      op = Ast.Plus;
+      right = Ast.Integer {int = 2L};
+    }
+  }
+]

@@ -1,0 +1,21 @@
+let test_addition_type_mismatch = [
+  Ast.CompoundStm {
+    stms = [
+      Ast.ExprStm {expr = Some (Ast.BinOp {
+        left = Ast.Integer {int = 5L};
+        op = Ast.Plus;
+        right = Ast.Boolean {bool = true}; 
+      })}
+    ];
+  };
+  Ast.ReturnStm {
+    ret = Ast.BinOp {
+    left = Ast.Integer {int = 2L};
+    op = Ast.Plus;
+    right = Ast.Integer {int = 2L};
+    };
+  }
+]
+
+
+/**/

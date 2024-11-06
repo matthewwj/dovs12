@@ -1,0 +1,3 @@
+/*function test*/
+var x = read_integer();
+return x;

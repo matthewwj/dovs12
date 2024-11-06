@@ -1,0 +1,45 @@
+
+let advanced_for_program = [
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "i"};
+      tp = Some Ast.Int;
+      body = Ast.Integer {int = 1L};
+    };
+  ]);
+
+  Ast.ForStm {
+    init = Some (FIExpr (Ast.Assignment {
+    lvl = Ast.Var (Ast.Ident {name = "i"});
+    rhs = Ast.Integer {int = 0L};
+    }));
+    cond = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "i"}));
+      op = Ast.Lt;
+      right = Ast.Integer {int = 10L};
+    });
+    update = Some (Ast.Assignment {
+      lvl = Ast.Var (Ast.Ident {name = "i"});
+      rhs = Ast.BinOp {
+        left = Ast.Lval (Ast.Var (Ast.Ident {name = "i"}));
+        op = Ast.Plus;
+        right = Ast.Integer {int = 1L};
+      };
+    });
+    body = Ast.ExprStm {
+      expr = Some (Ast.Call {
+        fname = Ast.Ident {name = "print_integer"};
+        args = [Ast.Lval (Ast.Var (Ast.Ident {name = "i"}))];
+      });
+    };
+  };
+  Ast.ExprStm {
+      expr = Some (Ast.Call {
+        fname = Ast.Ident {name = "print_integer"};
+        args = [Ast.Lval (Ast.Var (Ast.Ident {name = "i"}))];
+      });
+    };
+  Ast.ReturnStm {
+    ret = Ast.Lval (Ast.Var (Ast.Ident {name = "i"}));
+  }
+]

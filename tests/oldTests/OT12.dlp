@@ -1,0 +1,24 @@
+let func_call_test2 = [
+    Ast.VarDeclStm (DeclBlock [
+      Declaration {
+        name = Ast.Ident {name = "x"};
+        tp = Some Ast.Int; 
+        body = Ast.Integer {int = 10L};  
+      };
+    ]);
+    Ast.ExprStm {
+      expr = Some (
+        Ast.Call {
+          fname = Ast.Ident {name = "print_integer"};
+          args = [Ast.Lval (Ast.Var (Ast.Ident {name = "x"}))]
+        }
+      )
+    };
+    Ast.ReturnStm {
+      ret = Ast.BinOp {
+        left = Ast.Integer {int = 2L};
+        op = Ast.Plus;
+        right = Ast.Integer {int = 2L};
+      };
+    }  
+]

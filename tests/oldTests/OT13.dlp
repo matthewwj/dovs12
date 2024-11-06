@@ -1,0 +1,23 @@
+let if_then_else_test = [
+  Ast.CompoundStm {
+    stms = [
+      Ast.VarDeclStm (DeclBlock [
+        Declaration { name = Ast.Ident {name = "a"}; tp = Some Ast.Int; body = Ast.Integer {int = 0L} };
+      ]);
+      Ast.VarDeclStm (DeclBlock [
+        Declaration { name = Ast.Ident {name = "b"}; tp = Some Ast.Int; body = Ast.Integer {int = 0L} };
+      ]);
+      Ast.IfThenElseStm {
+        cond = Ast.BinOp {left = Ast.Integer {int = 5L}; op = Ast.Lt; right = Ast.Integer {int = 10L}};
+        thbr = Ast.ExprStm {expr = Some (Ast.Assignment {lvl = Ast.Var (Ast.Ident {name = "a"}); rhs = Ast.Integer {int = 5L}})};
+        elbr = Some (Ast.ExprStm {expr = Some (Ast.Assignment {lvl = Ast.Var (Ast.Ident {name = "b"}); rhs = Ast.Integer {int = 10L}})})
+      }; 
+    ]};
+  Ast.ReturnStm {
+    ret = Ast.BinOp {
+      left = Ast.Integer {int = 2L};
+      op = Ast.Plus;
+      right = Ast.Integer {int = 2L};
+    };
+  }  
+]

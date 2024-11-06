@@ -1,0 +1,30 @@
+let test_shadowing = [
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"}; 
+      tp = Some Ast.Int;
+      body = Ast.Integer {int = 5L};  
+    };
+  ]);
+  Ast.CompoundStm {
+    stms = [
+      Ast.VarDeclStm (DeclBlock [
+        Declaration {
+          name = Ast.Ident {name = "x"};  
+          tp = Some Ast.Bool;
+          body = Ast.Integer {int = 10L}; 
+        };
+      ]);
+      Ast.ExprStm {
+        expr = Some (Ast.BinOp {
+          left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));  
+          op = Ast.Plus;
+          right = Ast.Integer {int = 2L}; 
+        });
+      };
+    ]
+  };
+  Ast.ReturnStm {
+    ret = Ast.Lval (Ast.Var (Ast.Ident {name = "x"})); 
+  }
+]

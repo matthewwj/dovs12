@@ -1,0 +1,18 @@
+let test_assignment_type_mismatch = [
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Int;
+      body = Ast.Integer {int = 5L};
+    };
+  ]);
+  Ast.ExprStm {
+    expr = Some (Ast.Assignment {
+      lvl = Ast.Var (Ast.Ident {name = "x"});
+      rhs = Ast.Boolean {bool = true}; (* Type mismatch *)
+    })
+  };
+  Ast.ReturnStm {
+    ret = Ast.Integer {int = 0L};
+  }
+]

@@ -1,0 +1,26 @@
+let test_logic_short_circuit_fail = [
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Bool;
+      body = Ast.Boolean {bool = true};  
+    };
+  ]);
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "y"};
+      tp = Some Ast.Int;
+      body = Ast.Integer {int = 0L};  
+    };
+  ]);
+  Ast.ExprStm {
+    expr = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));  (* x = true *)
+      op = Ast.Land;  
+      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));  (* y = int *)
+    })
+  };
+  Ast.ReturnStm {
+    ret = Ast.Integer {int = 0L};
+  }
+]

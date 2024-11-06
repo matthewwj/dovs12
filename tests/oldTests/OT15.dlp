@@ -1,0 +1,22 @@
+let test_short_circuiting = [
+  Ast.VarDeclStm (DeclBlock [
+    Declaration {
+      name = Ast.Ident {name = "x"};
+      tp = Some Ast.Bool;
+      body = Ast.Boolean {bool = false};
+    };
+  ]);
+  Ast.ExprStm {
+    expr = Some (Ast.BinOp {
+      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"})); (* false *)
+      op = Ast.Land;
+      right = Ast.Call {
+        fname = Ast.Ident {name = "print_integer"}; (* this should not execute *)
+        args = [Ast.Integer {int = 5L}]
+      }
+    })
+  };
+  Ast.ReturnStm {
+    ret = Ast.Integer {int = 0L};
+  }
+]
