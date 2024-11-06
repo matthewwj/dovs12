@@ -7,7 +7,7 @@ let _ =
  in 
   let lex_buf = Lexing.from_channel file_in in 
   let parse_res = Parser.main Lexer.read lex_buf in
-  PrintBox_text.output stdout (Pretty.program_to_tree parse_res)
+  PrintBox_text.output stdout (Pretty.program_to_tree parse_res)*)
 
 (*let parse_from_file ?(with_positions = true) file_name =
   let file_in = open_in file_name in
@@ -26,9 +26,8 @@ let _ =
     in
     raise @@ Errors.ParseErr err
 ;;*)
-*)
 let _ = 
-  let file_in = open_in "tests/neg tests/negtest10.dlp" in 
+  let file_in = open_in "tests/input1.txt" in 
   let lex_buf = Lexing.from_channel file_in in 
   let parse_res = Parser.main Lexer.read lex_buf in
   let (typedStmt, env) = Semant.typecheck_prog parse_res in

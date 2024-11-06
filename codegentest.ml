@@ -1,7 +1,7 @@
-module Codegen = Codegen
+(*module Codegen = Codegen
 module Semant = Semant
 exception Unimplemented (* your code should eventually compile without this exception *)
-(*
+
 
 (* Positive test: Multiple variable declarations in one statement *)
 let test_multi_var_decl_positive = [
@@ -353,7 +353,7 @@ let func_call_test2 = [
       };
     }  
 ]
-(*
+
 let if_then_else_test = [
   Ast.CompoundStm {
     stms = [
@@ -377,7 +377,7 @@ let if_then_else_test = [
     };
   }  
 ]
-*)
+
 let test_func_call_arg_mismatch = [
   Ast.ExprStm {
     expr = Some (
@@ -732,7 +732,6 @@ let () =
 
   print_endline "Testing short circuiting: Negative Test";
   test_codegen test_logic_short_circuit_fail "shortcircuit3.ll";
-
 
 
 
