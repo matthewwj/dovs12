@@ -7,9 +7,9 @@ exception ParseErr of string
 
 let location_to_string (location : Location.location) =
   let start_lnum = location.start_pos.pos_lnum in
-  let start_cnum = location.start_pos.pos_cnum in
+  let start_cnum = location.start_pos.pos_cnum - location.start_pos.pos_bol in
   let end_lnum = location.end_pos.pos_lnum in
-  let end_cnum = location.end_pos.pos_cnum in
+  let end_cnum = location.end_pos.pos_cnum - location.end_pos.pos_bol in
   let sentence =
     Printf.sprintf
       "start location (%d, %d) - end location (%d, %d)"
@@ -18,8 +18,7 @@ let location_to_string (location : Location.location) =
       end_lnum
       end_cnum
   in
-  sentence
-;;
+  sentence;
 
 type error =
 | TypeMismatch of {expected : TAst.typ; actual : TAst.typ; loc: Location.location}
@@ -38,7 +37,7 @@ type error =
 (* Useful for printing errors *)
 let error_to_string err =
   match err with
-  | TypeMismatch {expected; actual; loc} -> Printf.sprintf "Type mismatch: expected %s but found %s ar %s." (TPretty.typ_to_string expected) (TPretty.typ_to_string actual) (location_to_string loc)
+  | TypeMismatch {expected; actual; loc} -> Printf.sprintf "Type mismatch: expected %s but found %s at %s." (TPretty.typ_to_string expected) (TPretty.typ_to_string actual) (location_to_string loc)
   | NoReturnError -> Printf.sprintf "program is missing a return statement"
   | UndeclaredVariable { variablename; loc } -> Printf.sprintf "Undeclared variable %s at %s" variablename (location_to_string loc)
   | TooManyArguments {expected; actual; loc} -> Printf.sprintf "Too many arguments: expected %d but found %d at %s." expected actual (location_to_string loc)

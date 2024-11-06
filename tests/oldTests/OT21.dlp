@@ -1,25 +1,3 @@
-/*let test_var_decls = [
-  Ast.VarDeclStm (DeclBlock [
-    Declaration {
-      name = Ast.Ident {name = "x"};
-      tp = Some Ast.Int;
-      body = Ast.Integer {int = 10L};
-    };
-    Declaration {
-      name = Ast.Ident {name = "y"};
-      tp = Some Ast.Int;
-      body = Ast.BinOp {
-        left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
-        op = Ast.Plus;
-        right = Ast.Integer {int = 5L};
-      };
-    };
-  ]);
-  Ast.ReturnStm {
-    ret = Ast.BinOp {
-      left = Ast.Lval (Ast.Var (Ast.Ident {name = "x"}));
-      op = Ast.Plus;
-      right = Ast.Lval (Ast.Var (Ast.Ident {name = "y"}));
-    };
-  }
-]*/
+var x = 10;
+var y = x + 5;
+return x + y;

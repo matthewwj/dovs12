@@ -15,3 +15,6 @@
     }
   }
 ]*/
+print_integer(1);
+var result = 2 + 2;
+return result;

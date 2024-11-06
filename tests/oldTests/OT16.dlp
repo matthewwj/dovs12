@@ -1,21 +1,3 @@
-/*let test_function_masking = [
-  Ast.VarDeclStm (DeclBlock [
-    Declaration {
-      name = Ast.Ident {name = "print_integer"};
-      tp = Some Ast.Int;
-      body = Ast.Integer {int = 42L}; (* Masks the function print_integer *)
-    };
-  ]);
-  Ast.ExprStm {
-    expr = Some (
-      Ast.Call {
-        fname = Ast.Ident {name = "print_integer"}; (* This should fail *)
-        args = [Ast.Integer {int = 5L}]
-      }
-    )
-  };
-  Ast.ReturnStm {
-    ret = Ast.Integer {int = 0L};
-  }
-]
-*/
+var print_integer = 42;
+print_integer(5);
+return 0;
