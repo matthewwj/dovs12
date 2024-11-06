@@ -15,12 +15,10 @@ clean:
 
 run: 
 	@echo "Testing semant and codegen"
-	./_build/default/codegentest.exe
-	
 
 test: 
 	@echo "Testing semant and codegen"
 	dune build
-	./_build/default/parserrun.exe
+	./_build/default/main.exe
 #	clang $(OUTPUT_DIR)/testreadint.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output1
 #	./$(OUTPUT_DIR)/output1
