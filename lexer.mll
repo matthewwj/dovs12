@@ -79,5 +79,6 @@ and comment nestingLevel line_com = parse
        }
 | "//" {comment nestingLevel true lexbuf}
 | "\n" { if nestingLevel = 0 then read lexbuf else comment nestingLevel false lexbuf}
+| "\r" { comment nestingLevel line_com lexbuf }  
 | eof  { failwith "Broken comment" }
 | _   { comment nestingLevel line_com lexbuf } 

@@ -14,10 +14,16 @@ let write_to_file (path: string) (contents: string) =
   let oc = open_out full_path in
   Printf.fprintf oc "%s" contents;
   close_out oc
+  
+
+let normalize_line_endings (text: string) : string =
+  String.split_on_char '\r' text |> String.concat ""
 
 let compile_prog pathtofile = 
   let file_in = open_in pathtofile in 
-  let lex_buf = Lexing.from_channel file_in in 
+  let lex_str = really_input_string file_in (in_channel_length file_in) in
+  let normalized_str = normalize_line_endings lex_str in
+  let lex_buf = Lexing.from_string normalized_str in
   let parse_res = Parser.main Lexer.read lex_buf in
   let (typedStmt, _) = Semant.typecheck_prog parse_res in
   (*PrintBox_text.output stdout (Pretty.program_to_tree parse_res);*)  (* For printing parsetree*)
@@ -27,6 +33,6 @@ let compile_prog pathtofile =
   exit 0
 
 let _ =
-  compile_prog "tests/oldTests/OT8.dlp";
+  compile_prog "tests/oldTests/OT7.dlp";
   
   
