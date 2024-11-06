@@ -28,7 +28,7 @@ let _ =
 ;;*)
 *)
 let _ = 
-  let file_in = open_in "input1.txt" in 
+  let file_in = open_in "tests/neg tests/negtest10.dlp" in 
   let lex_buf = Lexing.from_channel file_in in 
   let parse_res = Parser.main Lexer.read lex_buf in
   let (typedStmt, env) = Semant.typecheck_prog parse_res in

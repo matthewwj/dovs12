@@ -1,6 +1,7 @@
-/* assignment in comparison */
+/* extra = in comparison */
 
 var x = 2 + 2;
-if(x = 4){
+if(x === 4){
     x = x + 2;
 }
+return x;
