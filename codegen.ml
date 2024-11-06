@@ -296,7 +296,7 @@ let codegen_prog tprog=
   let cfg = CfgBuilder.get_cfg !(env.cfgb) in
   let dolphin_main = { fty = [], I64; param = []; cfg } in
   { tdecls = [] ; extgdecls = [] ; gdecls = [] ; extfuns = [Sym.symbol "print_integer", ([I64], Void); Sym.symbol "read_integer", ([], I64)]
-  ; fdecls = [ Sym.symbol "dolphin_main", dolphin_main ]}
+  ; fdecls = [ Sym.symbol "main", dolphin_main ]}
 
 
 
