@@ -38,11 +38,6 @@
 // types
 %token INT BOOL STRING BYTE VOID RECORD
 
-(*%start <(token * Lexing.position) list> tokens*)
-(*
-%start <Ast.expr> prog
-*)
-
 
 %left LOR 
 %left LAND
@@ -66,8 +61,6 @@
 
 
 %%
-
-
 
 %inline ident:
     i = IDENT {Ident {name = i; loc = l $loc}}
