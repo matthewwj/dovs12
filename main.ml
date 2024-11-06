@@ -15,7 +15,6 @@ let write_to_file (path: string) (contents: string) =
   Printf.fprintf oc "%s" contents;
   close_out oc
 
-
 let compile_prog pathtofile = 
   let file_in = open_in pathtofile in 
   let lex_buf = Lexing.from_channel file_in in 
@@ -28,4 +27,6 @@ let compile_prog pathtofile =
   exit 0
 
 let _ =
-  compile_prog "tests/oldTests/OT1.dlp";
+  compile_prog "tests/oldTests/OT8.dlp";
+  
+  

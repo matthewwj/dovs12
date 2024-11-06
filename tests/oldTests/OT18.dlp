@@ -1,4 +1,4 @@
-let test_logic_short_circuit_pass = [
+/*let test_logic_short_circuit_pass = [
   Ast.VarDeclStm (DeclBlock [
     Declaration {
       name = Ast.Ident {name = "x"};
@@ -23,4 +23,4 @@ let test_logic_short_circuit_pass = [
   Ast.ReturnStm {
     ret = Ast.Integer {int = 0L};
   }
-]
+]*/

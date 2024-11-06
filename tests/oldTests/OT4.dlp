@@ -6,8 +6,9 @@ while(x > 0){
     }
 }
 x = 4;
-for(x > 0; x = x - 1){}
-while(x > 0){
+for(; x > 0; x = x - 1){
+    while(x > 0){
     break;
+}
 }
 return x;

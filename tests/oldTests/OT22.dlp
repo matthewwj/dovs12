@@ -1,4 +1,4 @@
-
+/*
 let advanced_for_program = [
   Ast.VarDeclStm (DeclBlock [
     Declaration {
@@ -43,3 +43,4 @@ let advanced_for_program = [
     ret = Ast.Lval (Ast.Var (Ast.Ident {name = "i"}));
   }
 ]
+*/

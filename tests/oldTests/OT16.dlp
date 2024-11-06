@@ -1,4 +1,4 @@
-let test_function_masking = [
+/*let test_function_masking = [
   Ast.VarDeclStm (DeclBlock [
     Declaration {
       name = Ast.Ident {name = "print_integer"};
@@ -18,3 +18,4 @@ let test_function_masking = [
     ret = Ast.Integer {int = 0L};
   }
 ]
+*/

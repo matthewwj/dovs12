@@ -1,4 +1,4 @@
-let test_func_call_arg_mismatch = [
+/*let test_func_call_arg_mismatch = [
   Ast.ExprStm {
     expr = Some (
       Ast.Call {
@@ -14,4 +14,4 @@ let test_func_call_arg_mismatch = [
       right = Ast.Integer {int = 2L};
     }
   }
-]
+]*/

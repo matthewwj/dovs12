@@ -1,4 +1,4 @@
-let test_shadowing = [
+/* let test_shadowing = [
   Ast.VarDeclStm (DeclBlock [
     Declaration {
       name = Ast.Ident {name = "x"}; 
@@ -27,4 +27,4 @@ let test_shadowing = [
   Ast.ReturnStm {
     ret = Ast.Lval (Ast.Var (Ast.Ident {name = "x"})); 
   }
-]
+] */
