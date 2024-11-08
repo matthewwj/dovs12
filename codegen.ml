@@ -135,7 +135,7 @@ let rec codegen_expr env expr =
       (* Load the value from the memory address *)
       emit_insn_with_fresh "load" @@ Ll.Load (llty, llop);
     | None -> raise @@ UnexpectedInput "Variable not found"
-  ) 
+  )
   | TAst.Assignment {lvl = Var {ident = Ident {sym}; _}; rhs; _} -> (
     let crhs = codegen_expr env rhs in
     match Sym.Table.find_opt sym env.locals with
@@ -143,6 +143,11 @@ let rec codegen_expr env expr =
       emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, crhs, llop));
       crhs
     | None -> raise @@ UnexpectedInput "Variable not found"
+  )
+  | TAst.CommaExpr {lhs; rhs; tp} -> (
+    let _ = codegen_expr env lhs in
+    let rhs = codegen_expr env rhs in
+    rhs
   )
   | TAst.Call {fname = Ident { sym }; args; tp} -> (
     let llty = type_op_match tp in

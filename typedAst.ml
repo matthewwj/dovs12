@@ -17,6 +17,8 @@ type expr =
 | UnOp of {op : unop; operand : expr; tp : typ}
 | Lval of lval
 | Assignment of {lvl : lval; rhs : expr; tp : typ}
+| CommaExpr of {lhs : expr; rhs : expr; tp: typ}
+
 | Call of {fname : ident; args : expr list; tp : typ}
 and lval =
 | Var of {ident : ident; tp : typ}

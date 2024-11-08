@@ -87,8 +87,11 @@ let rec infertype_expr env expr =
         TAst.Var {ident = TAst.Ident {sym = Symbol.symbol name}; tp = lvalType}
     in
     (TAst.Assignment {lvl = lvlType; rhs = rhsExpr; tp = lvalType}, lvalType)
-  | Ast.CommaExpr {lhs; rhs; loc} ->
-    raise Unimplemented
+  | Ast.CommaExpr {lhs; rhs; loc} -> 
+    let leftExp, _ = infertype_expr env lhs in 
+    let rightExp, rightTyp = infertype_expr env rhs in
+    (TAst.CommaExpr {lhs = leftExp; rhs = rightExp; tp = rightTyp}, rightTyp)
+  
   | Ast.Call {fname = Ident {name; _}; args; loc} ->
     let sym = Sym.symbol name in
     (* Lookup the function in the environment *)
