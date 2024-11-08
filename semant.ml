@@ -87,6 +87,8 @@ let rec infertype_expr env expr =
         TAst.Var {ident = TAst.Ident {sym = Symbol.symbol name}; tp = lvalType}
     in
     (TAst.Assignment {lvl = lvlType; rhs = rhsExpr; tp = lvalType}, lvalType)
+  | Ast.CommaExpr {lhs; rhs; loc} ->
+    raise Unimplemented
   | Ast.Call {fname = Ident {name; _}; args; loc} ->
     let sym = Sym.symbol name in
     (* Lookup the function in the environment *)
@@ -102,7 +104,7 @@ let rec infertype_expr env expr =
       let args_types = safe_zip args param_types in
       let type_args = List.map (fun (a, t) -> typecheck_expr env a t loc (*SUSSSSSSSSSSSSSSSSS*)) args_types in
       (TAst.Call {fname = TAst.Ident {sym}; args = type_args; tp = ret}, ret)
-    | None ->
+      | None ->
       raise (Invalid_argument (Errors.error_to_string (Errors.UndeclaredVariable {variablename = name; loc = loc})))
     | _ ->
       raise (Invalid_argument (Errors.error_to_string (Errors.NotAFunction {name; loc = loc})))

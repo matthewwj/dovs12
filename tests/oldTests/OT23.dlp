@@ -1,0 +1,7 @@
+var y = 0;
+var x = (1, (2, 3));
+var z = (1, 2, 3);
+var s = (1);
+var q = 1;
+var fukyu = ((1,2),(3,4),(4,5));
+return y;

@@ -93,8 +93,18 @@ exp:
 | left = exp op = binop right = exp {BinOp {left; op; right; loc = l $loc}}
 | op = unop i = exp {UnOp {op; operand = i; loc = l $loc}}
 | fname = IDENT LPAREN args = separated_list(COMMA, exp) RPAREN { Call {fname = Ident {name = fname; loc = l $loc}; args = args; loc = l $loc} }
-| LPAREN e = exp RPAREN {e}
 | i = IDENT {Lval (Var (Ident {name = i; loc = l $loc})) }
+(*| LPAREN e = exp RPAREN {e}
+| LPAREN le = exp COMMA re = exp RPAREN {CommaExpr {lhs = le; rhs = re; loc = l $loc}} *)
+| LPAREN e = commaexprcontainer RPAREN {e}
+
+
+commaexprcontainer:
+| le = exp COMMA re = exp  {CommaExpr {lhs = le; rhs = re; loc = l $loc}} 
+| le = exp COMMA re = commaexprcontainer {CommaExpr {lhs = le; rhs = re; loc = l $loc}} 
+| e = exp {e}
+
+
 
 
 type_helper:
