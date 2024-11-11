@@ -37,6 +37,9 @@
 %token NIL VAR LET IF ELSE WHILE FOR BREAK CONTINUE RETURN NEW
 // types
 %token INT BOOL STRING BYTE VOID RECORD
+// Functions
+%token FUNC
+
 
 
 %left LOR 
@@ -57,7 +60,14 @@
 %type <single_declaration> decl 
 %type <declaration_block> decl_block 
 %type <expr option> option(exp)
+
+
+
+%type <func_decl> func_decl
+%type <param list> param_list
+%type <param> param
 %start <program> main
+
 
 
 %%
@@ -140,10 +150,26 @@ stmt:
  | BREAK SEMICOLON {BreakStm {loc = l $loc}}
  | CONTINUE SEMICOLON {ContinueStm {loc = l $loc}}
 
+
+param:
+| name = ident COLON tp = type_helper { Param {name; tp; loc = l $loc} }
+
+param_list:
+| p = separated_list(COMMA, param) { p }
+
 stmts:
 r = list(stmt) 
 {r}
 
+
+func_decl:
+| ret_type = type_def fname = ident LPAREN params = param_list RPAREN LBRACE body = stmts RBRACE
+    { FuncDecl {fname; params; ret_type; body; loc = l $loc} }
+
+main:
+| funcs = list(func_decl) EOF { { funcs } }
+
+(*
 main:
 | res = stmts EOF
-    {res}
+    {res}*)

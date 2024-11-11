@@ -57,4 +57,20 @@ type statement =
 | CompoundStm of {stms : statement list; loc : Loc.location}
 | ReturnStm of {ret : expr; loc : Loc.location} 
 
-type program = statement list
+
+type param = Param of {name : ident; tp : typ; loc : Loc.location}
+
+type func_decl = FuncDecl of {
+  fname : ident;
+  params : param list;
+  ret_type : typ option; 
+  body : statement list;
+  loc : Loc.location;
+}
+
+type program = {
+  funcs : func_decl list;
+}
+
+
+

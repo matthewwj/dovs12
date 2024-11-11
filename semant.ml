@@ -266,13 +266,17 @@ let return_check stm =
   | TAst.ReturnStm _ -> 1
   | _ -> raise UnimpRtrError
 
+
+(*
+
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
-let typecheck_prog prg : TAst.program * Errors.error list =
+let typecheck_prog (prg: Ast.program) : TAst.program * Errors.error list =
   let env = Env.make_env RunTimeBindings.library_functions in
   begin
-    match List.rev prg with
+    match List.rev prg.funcs with
     | Ast.ReturnStm _ :: _ -> ()
     | _ -> raise (Invalid_argument (Errors.error_to_string Errors.NotEndInRet))
   end;
   let tProg, env_res = typecheck_statement_seq env prg in
   tProg, !(env_res.errors)
+*)
