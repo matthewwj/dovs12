@@ -52,11 +52,9 @@ type funtype = FunTyp of {ret : typ; params : param list}
 type func_decl = FuncDecl of {
   fname : ident;
   params : param list;
-  ret_type : typ option; 
+  ret_type : typ; 
   body : statement list;
 }
 
-type program = {
-  funcs : func_decl list;
-}
-
+type program = 
+  | Program of func_decl list

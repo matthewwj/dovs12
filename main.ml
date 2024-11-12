@@ -27,16 +27,18 @@ let compile_prog pathtofile =
   let parse_res = Parser.main Lexer.read lex_buf in
   
   
-  (*PrintBox_text.output stdout (Pretty.program_to_tree parse_res);*)  (* For printing parsetree*)
-  (*
+  (* PrintBox_text.output stdout (Pretty.program_to_tree parse_res);  For printing parsetree*)
+  
   let (typedStmt, _) = Semant.typecheck_prog parse_res in
   
-  let llvm_prog = Codegen.codegen_prog typedStmt in
+  (*let llvm_prog = Codegen.codegen_prog typedStmt in
   let llvm_ir_string = Ll.string_of_prog llvm_prog in
-  print_endline llvm_ir_string; *)
+  print_endline llvm_ir_string; 
+  exit 0*)
+  
   exit 0
 
 let _ =
-  compile_prog "tests/oldTests/OT6.dlp";
+  compile_prog "tests/oldTests/OT1.dlp";
   
   

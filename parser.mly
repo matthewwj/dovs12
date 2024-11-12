@@ -120,6 +120,8 @@ commaexprcontainer:
 type_helper:
 | INT {Int {loc = l $loc}}
 | BOOL {Bool {loc = l $loc}}
+| VOID {Void {loc = l $loc}}
+
 
 type_def:
 | COLON t = type_helper {Some(t)}
@@ -163,12 +165,22 @@ r = list(stmt)
 
 
 func_decl:
-| ret_type = type_def fname = ident LPAREN params = param_list RPAREN LBRACE body = stmts RBRACE
+| ret_type = type_helper fname = ident LPAREN params = param_list RPAREN LBRACE body = stmts RBRACE
     { FuncDecl {fname; params; ret_type; body; loc = l $loc} }
 
+
+
+main:
+| EOF { Program []}
+| f = func_decl p = main { 
+    let Program pl = p in
+    Program (f :: pl)
+  }
+
+(*
 main:
 | funcs = list(func_decl) EOF { { funcs } }
-
+*)
 (*
 main:
 | res = stmts EOF

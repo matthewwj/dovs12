@@ -32,6 +32,10 @@ type error =
 | NotEndInRet 
 | UnexpectedBreak of {loc: Location.location}
 | UnexpectedContinue of {loc: Location.location}
+| DuplicateName of {name: string; loc: Location.location}
+| ParamsInMainFunc of {loc: Location.location}
+| DuplicateParams of {loc: Location.location}
+| MissingReturn of {loc: Location.location}
 (* other errors to be added as needed. *)
 
 (* Useful for printing errors *)
@@ -48,3 +52,7 @@ let error_to_string err =
   | Shadowing {name; loc} -> Printf.sprintf "Shadowing error please update this error msg %s at %s" name (location_to_string loc) 
   | UnexpectedBreak {loc} -> Printf.sprintf "Break not in loop at %s" (location_to_string loc)
   | UnexpectedContinue {loc} -> Printf.sprintf "Continue not in loop at %s" (location_to_string loc)
+  | DuplicateName {name; loc} -> Printf.sprintf "Duplicate function name %s. Location is: %s" (name) (location_to_string loc)
+  | ParamsInMainFunc {loc} -> Printf.sprintf "Main function cannot have params at %s" (location_to_string loc)
+  | DuplicateParams {loc} -> Printf.sprintf "Duplicate parameters at %s" (location_to_string loc)
+  | MissingReturn {loc} -> Printf.sprintf "Missing return at %s" (location_to_string loc)

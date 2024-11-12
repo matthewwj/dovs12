@@ -11,6 +11,7 @@ exception UnimpRtrError (* temporary exception for no return error *)
 let typecheck_typ = function
   | Ast.Int _loc -> TAst.Int
   | Ast.Bool _loc -> TAst.Bool
+  | Ast.Void _loc -> TAst.Void
 
 let typecheck_op op =
   match op with
@@ -267,12 +268,128 @@ let return_check stm =
   | _ -> raise UnimpRtrError
 
 
-(*
+
+
+let rec has_return stm =
+  match stm with
+  | Ast.ReturnStm {ret; _} -> 
+    true
+  | CompoundStm {stms; _} -> List.exists has_return stms
+  | IfThenElseStm {cond = _; thbr; elbro; _} ->
+      let then_has_return = has_return thbr in
+      let else_has_return = 
+        match elbro with
+        | Some el -> has_return el
+        | None -> false
+      in
+      then_has_return && else_has_return
+  | WhileStm _ | ForStm _ -> false 
+  | _ -> false
+
+let convert_ident (ast_ident: Ast.ident) : TAst.ident =
+  match ast_ident with
+  | Ast.Ident {name; _} ->
+    let symbol = Sym.symbol name in
+    TAst.Ident {sym = symbol}
+
+let typecheck_func_params env (param: Ast.param) : TAst.param =
+  match param with
+  | Ast.Param {name; tp; _ } ->
+    let typed_arg_type = typecheck_typ tp in
+    let typed_name = convert_ident name in
+    TAst.Param {paramname = typed_name; typ = typed_arg_type}
+
+let typecheck_function_decl env (f_decl: Ast.func_decl) =
+  match f_decl with
+  | Ast.FuncDecl {ret_type; fname; params; body; loc} -> 
+    let typed_return_type = typecheck_typ ret_type in
+    let typed_name = convert_ident fname in
+    let (Ast.Ident {name = fname_name; loc = _}) = fname in
+
+    (* Check for duplicate parameter names *)
+    let param_names = List.map (fun (Ast.Param {name = Ast.Ident {name; _}; _}) -> name) params in
+    let name_set = Hashtbl.create (List.length param_names) in
+    List.iter (fun name ->
+      if Hashtbl.mem name_set name then
+        raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateParams {loc = loc})))
+      else
+        Hashtbl.add name_set name true
+    ) param_names;
+
+    (* Check that all paths return *)
+    let body_has_return = List.exists has_return body in
+    if not body_has_return then
+      raise (Invalid_argument (Errors.error_to_string (Errors.MissingReturn {loc})));
+
+    (* Check if the function is 'main' and validate parameters *)
+    if fname_name = "main" && params <> [] then
+      raise (Invalid_argument (Errors.error_to_string (Errors.ParamsInMainFunc {loc = loc})));
+    (* Add params to environment *)
+    let env_with_params = List.fold_left (fun acc_env param ->
+      match param with
+      | Ast.Param {name = Ast.Ident {name = fname; _}; tp; loc} ->
+        let sym = Sym.symbol fname in
+        let typed_arg_type = typecheck_typ tp in
+        Env.insert_local_decl acc_env sym typed_arg_type
+    ) env params in
+
+    (* Typecheck body*)
+    let (typed_body, _) =
+    List.fold_left
+    (fun (acc, env) stmt ->
+      let (typed_stmt, new_env) = typecheck_statement env stmt in
+      match stmt with 
+      | ReturnStm {ret; _} -> 
+        let (_, tp) = infertype_expr new_env ret in
+        if tp <> typed_return_type then
+          raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = typed_return_type; actual = tp; loc = loc})));
+        (acc @ [typed_stmt], new_env)
+        
+      | _ -> (acc @ [typed_stmt], new_env)
+    ) ([], env_with_params) body in
+
+    TAst.FuncDecl {
+      ret_type = typed_return_type;
+      fname = typed_name;
+      params = List.map (typecheck_func_params env) params;
+      body = typed_body
+    }
+
+let add_initial_functions env (f_decl: Ast.func_decl) =
+  match f_decl with
+  | Ast.FuncDecl {ret_type; fname; params; loc; _} ->
+    let string_name = match fname with | Ast.Ident {name; _} -> name in
+    (* Check for duplicate names *)
+    let new_env = match Env.lookup_var_fun env (Symbol.symbol string_name) with
+    | None -> env
+    | Some (Var _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
+    | Some (Fun _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
+    
+  in
+    let typed_args = List.map (typecheck_func_params new_env) params in
+    let typed_return_type = typecheck_typ ret_type in
+    Env.insert_local_func_decl new_env (Symbol.symbol string_name) (TAst.FunTyp {ret = typed_return_type; params = typed_args})
+
 
 (* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
-let typecheck_prog (prg: Ast.program) : TAst.program * Errors.error list =
+let typecheck_prog (prg: Ast.program)  =
   let env = Env.make_env RunTimeBindings.library_functions in
-  begin
+  match prg with
+  | Ast.Program function_decls ->
+    let envFunc = List.fold_left add_initial_functions env function_decls in
+    (* Check for main function *)
+    (match List.rev function_decls with
+    | Ast.FuncDecl {ret_type; fname; _} :: _ ->
+      let main = Symbol.symbol "main" in
+      (match Env.lookup_var_fun envFunc main with
+      | Some (Fun FunTyp{ret; _}) -> (match ret with | Int -> () | _ -> raise Unimplemented)
+      | _ ->  raise Unimplemented)
+    | _ ->  raise Unimplemented);
+
+  let typed_function_decls = List.map (typecheck_function_decl envFunc) function_decls in
+  (TAst.Program typed_function_decls, envFunc)
+  
+ (* begin
     match List.rev prg.funcs with
     | Ast.ReturnStm _ :: _ -> ()
     | _ -> raise (Invalid_argument (Errors.error_to_string Errors.NotEndInRet))

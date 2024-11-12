@@ -23,6 +23,7 @@ let typ_to_tree tp =
   | Bool _ -> make_typ_line "Bool"
   | Int _ -> make_typ_line "Int"
 
+
 let binop_to_tree op =
     match op with
     | Plus _ -> make_keyword_line "PLUS"
@@ -42,7 +43,7 @@ let binop_to_tree op =
 let unop_to_tree op =
   match op with
   | Neg _ -> make_keyword_line "Neg"
-  | Lnot _ -> make_keyword_line "Lnot"
+  | Lnot _ -> make_keyword_line "Lor"
   
   let rec expr_to_tree e =
     match e with
@@ -97,5 +98,20 @@ let rec statement_to_tree c =
   | ReturnStm {ret; _} -> PBox.hlist ~bars:false [make_keyword_line "ReturnValStm: "; expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
+let function_arg_to_tree (Param {name; tp; _}) =
+  PBox.tree (make_keyword_line "FunctionArg") 
+    [PBox.hlist ~bars:false [make_info_node_line "ArgName: "; ident_to_tree name]; 
+    PBox.hlist ~bars:false [make_info_node_line "ArgType: "; typ_to_tree tp]]
+
+let function_decl_to_tree (FuncDecl {ret_type; fname; params; body; _}) =
+  PBox.tree (make_keyword_line "FunctionDecl")
+    [PBox.hlist ~bars:false [make_info_node_line "ReturnType: "; typ_to_tree ret_type];
+     PBox.hlist ~bars:false [make_info_node_line "FunctionName: "; ident_to_tree fname];
+     PBox.tree (make_info_node_line "FunctionArgs") (List.map function_arg_to_tree params);
+     PBox.hlist ~bars:false [make_info_node_line "FunctionBody: "; PBox.tree (make_keyword_line "FunctionBody") (statement_seq_to_forest body)]]
+
 let program_to_tree prog = 
-  PBox.tree (make_info_node_line "Program") (statement_seq_to_forest prog)
+  PBox.tree (make_info_node_line "Program") (
+    match prog with
+    | Program functions -> List.map function_decl_to_tree functions
+  )

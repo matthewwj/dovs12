@@ -6,6 +6,7 @@ type ident = Ident of {name : string; loc : Loc.location}
 type typ =
 | Int of {loc : Loc.location}
 | Bool of {loc : Loc.location}
+| Void of {loc : Loc.location}
 
 type binop =
 | Plus of {loc : Loc.location}
@@ -63,14 +64,13 @@ type param = Param of {name : ident; tp : typ; loc : Loc.location}
 type func_decl = FuncDecl of {
   fname : ident;
   params : param list;
-  ret_type : typ option; 
+  ret_type : typ; 
   body : statement list;
   loc : Loc.location;
 }
 
-type program = {
-  funcs : func_decl list;
-}
+type program = 
+  | Program of func_decl list
 
 
 

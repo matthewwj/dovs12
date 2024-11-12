@@ -1,4 +1,15 @@
-var a = 11;
-var b = 2 + 3;
-var c = true;
-return a + b;
+int odd (x: int) {
+  if (true) {
+      return 1;
+  }
+  else {
+      return 2;
+  }
+  return 1;
+  
+}
+
+int main () {
+  
+  return 1;
+}
