@@ -360,10 +360,10 @@ let add_functions env (f_decl: Ast.func_decl) =
     let string_name = match fname with | Ast.Ident {name; _} -> name in
     (* Check for duplicate names *)
     let new_env = match Env.lookup_var_fun env (Symbol.symbol string_name) with
-    | None -> env
-    | Some (Var _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
-    | Some (Fun _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
-  in
+      | None -> env
+      | Some (Var _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
+      | Some (Fun _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
+    in
     let typed_args = List.map (typecheck_func_params new_env) params in
     let typed_return_type = typecheck_typ ret_type in
     Env.insert_local_func_decl new_env (Symbol.symbol string_name) (TAst.FunTyp {ret = typed_return_type; params = typed_args})
