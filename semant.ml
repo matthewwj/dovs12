@@ -294,9 +294,12 @@ let convert_ident (ast_ident: Ast.ident) : TAst.ident =
 
 let typecheck_func_params env (param: Ast.param) : TAst.param =
   match param with
-  | Ast.Param {name; tp; _ } ->
+  | Ast.Param {name; tp; loc } ->
     let typed_arg_type = typecheck_typ tp in
     let typed_name = convert_ident name in
+    (match typed_arg_type with 
+    | TAst.Void -> raise (Invalid_argument (Errors.error_to_string (Errors.VoidInFuncParam {loc = loc})))
+    | _ -> ());
     TAst.Param {paramname = typed_name; typ = typed_arg_type}
 
 let typecheck_function_decl env (f_decl: Ast.func_decl) =

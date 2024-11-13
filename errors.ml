@@ -36,6 +36,8 @@ type error =
 | ParamsInMainFunc of {loc: Location.location}
 | DuplicateParams of {loc: Location.location}
 | MissingReturn of {loc: Location.location}
+| VoidInFuncParam of {loc: Location.location}
+
 (* other errors to be added as needed. *)
 
 (* Useful for printing errors *)
@@ -56,3 +58,4 @@ let error_to_string err =
   | ParamsInMainFunc {loc} -> Printf.sprintf "Main function cannot have params at %s" (location_to_string loc)
   | DuplicateParams {loc} -> Printf.sprintf "Duplicate parameters at %s" (location_to_string loc)
   | MissingReturn {loc} -> Printf.sprintf "Missing return at %s" (location_to_string loc)
+  | VoidInFuncParam {loc} -> Printf.sprintf "Cannot declare void type in function parameter %s" (location_to_string loc)

@@ -1,4 +1,4 @@
-int odd (x: int) {
+int odd (x: void) {
   if (true) {
       return 1;
   }
