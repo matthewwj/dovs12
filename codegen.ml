@@ -297,7 +297,7 @@ let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 
 let getNameOfFunc (TAst.Ident {sym}) = Symbol.name sym
 
-let rec codegen_func (env: cg_env) (p : TAst.param) : Ll.uid * Ll.ty * cg_env=
+let rec codegen_param (env: cg_env) (p : TAst.param) : Ll.uid * Ll.ty * cg_env=
   let emit = emit env in
   match p with 
   | TAst.Param {paramname = TAst.Ident {sym}; typ} ->
@@ -312,7 +312,7 @@ let rec codegen_func (env: cg_env) (p : TAst.param) : Ll.uid * Ll.ty * cg_env=
     name_ll, typ_ll, new_env;;
 
 
-let codegen_func_list (func : TAst.func_decl) : Ll.gid * Ll.fdecl =
+let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl =
   match func with
   | FuncDecl func ->
       let empty_environment = {
@@ -323,7 +323,7 @@ let codegen_func_list (func : TAst.func_decl) : Ll.gid * Ll.fdecl =
 
       let names, typs, env =
         List.fold_left (fun (ns, ts, env) p ->
-          let n, t, e = codegen_func env p in
+          let n, t, e = codegen_param env p in
           (ns @ [n], ts @ [t], e)
         ) ([], [], empty_environment) func.params
       in
@@ -341,7 +341,7 @@ let codegen_prog (tprog: TAst.program) =
     | TAst.Program funcs -> funcs
   in
   (* Generate code for each function declaration *)
-  let fdecls = List.map codegen_func_list func_decls in
+  let fdecls = List.map codegen_func func_decls in
   let extfuns = [
     (Sym.symbol "print_integer", ([I64], Void));
     (Sym.symbol "read_integer", ([], I64))

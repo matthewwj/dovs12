@@ -1,4 +1,5 @@
 /* emojis */
-
+int main() {
 var y = 2 + 2;
 ✈🏢🏢
+}

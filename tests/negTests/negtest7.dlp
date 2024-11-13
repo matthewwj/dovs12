@@ -1,3 +1,5 @@
 /* non existant key word */
+int main() {
 var y = 2 + 2;
 bob y;
+}

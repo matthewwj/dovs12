@@ -1,4 +1,5 @@
 /* unmarked comment */
-
+int main() { 
 var y = 2 + 2;
 dette er et stykke matematik
+}

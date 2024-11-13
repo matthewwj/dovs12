@@ -1,3 +1,4 @@
 /* expression missing right hand */
-
+int main() {
 var y = 2 - ;
+}

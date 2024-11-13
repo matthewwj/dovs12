@@ -1,2 +1,4 @@
 /* missing semi-colon*/
+int main() {
 var x = 2 + 2
+}

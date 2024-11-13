@@ -1,6 +1,6 @@
 /* bracket mis-match */
-
+int main() {
 var x = 2 + 2;
 if(x == 4){
     x = x + 2;
-}}
+}}}

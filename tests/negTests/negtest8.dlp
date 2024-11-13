@@ -1,2 +1,4 @@
 /* missing left hand */
+int main() {
 var = 2 + 2;
+}

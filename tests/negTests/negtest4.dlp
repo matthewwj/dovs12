@@ -1,2 +1,4 @@
 /* missing right hand */
+int main() {
 var y = ;
+}
