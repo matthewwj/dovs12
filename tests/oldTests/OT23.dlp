@@ -1,4 +1,6 @@
+int main () {
 var y = 0;
 
 var fukyu = ((1,2),(3,4),(4,1000));
 return y;
+}

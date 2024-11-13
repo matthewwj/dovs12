@@ -1,8 +1,9 @@
 /* Test shadowing with compound statements */
-
+int main () {
 var x = 5;
 {
 var x = 10;  
         x = x + 2;
 }
 return x;
+}

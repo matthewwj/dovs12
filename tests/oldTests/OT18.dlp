@@ -1,3 +1,4 @@
+int main () {
 var x = false;
 var y = true;
 var z = 0;
@@ -7,3 +8,4 @@ if (x && y) {
 }
 
 return z;
+}

@@ -1,6 +1,8 @@
+int main () {
 var x = 0;
 
 if (x && print_integer(5)) {
     
 }
 return 0;
+}

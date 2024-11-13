@@ -1,2 +1,4 @@
+int main () {
 var x = true;
 return x;
+}

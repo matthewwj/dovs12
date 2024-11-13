@@ -1,3 +1,5 @@
 /*function test*/
+int main () {
 var x = read_integer();
 return x;
+}

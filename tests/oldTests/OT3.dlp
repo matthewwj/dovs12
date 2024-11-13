@@ -1,5 +1,7 @@
 
 /* type mismatch */
+int main () {
 var x = 5;
 var y = false;
 return x + y;
+}
