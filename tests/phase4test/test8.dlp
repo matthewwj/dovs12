@@ -1,6 +1,6 @@
 /* 8. Test for correct use of a comma expression in an assignment */
 int main () {
     var x = 0;
-    x = (1, 2);  
+    var x = (1, 2);  
     return x;
 }

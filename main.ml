@@ -29,13 +29,13 @@ let compile_prog pathtofile =
   
   let (typedStmt, _) = Semant.typecheck_prog parse_res in
   
-  (*let llvm_prog = Codegen.codegen_prog typedStmt in
+  let llvm_prog = Codegen.codegen_prog typedStmt in
   let llvm_ir_string = Ll.string_of_prog llvm_prog in
-  print_endline llvm_ir_string; *)
+  print_endline llvm_ir_string;
   
   exit 0
 
 let _ =
-  compile_prog "tests/phase4test/test13.dlp";
+  compile_prog "tests/phase4test/test5.dlp";
   
   

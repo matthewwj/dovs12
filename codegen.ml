@@ -70,6 +70,7 @@ let type_of_expr (expr : TAst.expr) : Ll.ty =
   | Lval (Var { tp; _ }) -> type_op_match tp
   | Assignment _ -> Void
   | Call { tp; _ } -> type_op_match tp
+  | CommaExpr {lhs; rhs; tp} -> type_op_match tp
 
 
 (* Codegen for expressions *)
@@ -158,7 +159,7 @@ let rec codegen_expr env expr =
     match llty with
     | Ll.Void ->
         emit @@ CfgBuilder.add_insn (None, Ll.Call (llty, Ll.Gid sym, carglist));
-        Ll.BConst false
+        Null
     | _ ->
         emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
   )
@@ -294,24 +295,64 @@ let rec codegen_stmt env stm =
 
 let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 
-let rec codegen_func (env: cg_env) =
-  raise Unimplemented
+let getNameOfFunc (TAst.Ident {sym}) = Symbol.name sym
+
+let rec codegen_func (env: cg_env) (p : TAst.param) : Ll.uid * Ll.ty * cg_env=
+  let emit = emit env in
+  match p with 
+  | TAst.Param {paramname = TAst.Ident {sym}; typ} ->
+    let name_param = Symbol.name sym in 
+    let name_ll = fresh_symbol (name_param ^ "_param") in
+    let name_var = fresh_symbol (name_param ^ "_var" ) in 
+    let typ_ll = type_op_match typ in 
+    let _ = emit @@ CfgBuilder.add_alloca (name_var, typ_ll) in
+    let new_locals = Sym.Table.add sym (typ_ll, Ll.Id name_var) env.locals in
+    let new_env = { env with locals = new_locals } in
+    emit @@ CfgBuilder.add_insn (None, Ll.Store (typ_ll, Ll.Id name_ll, Ll.Id name_var));
+    name_ll, typ_ll, new_env;;
 
 
-let codegen_func_list env tprog = 
-  raise Unimplemented
+let codegen_func_list (func : TAst.func_decl) : Ll.gid * Ll.fdecl =
+  match func with
+  | FuncDecl func ->
+      let empty_environment = {
+        cfgb = ref CfgBuilder.empty_cfg_builder;
+        locals = Sym.Table.empty;
+        loop = []
+      } in
 
+      let names, typs, env =
+        List.fold_left (fun (ns, ts, env) p ->
+          let n, t, e = codegen_func env p in
+          (ns @ [n], ts @ [t], e)
+        ) ([], [], empty_environment) func.params
+      in
+      let env = codegen_stmt_list env func.body in
+      
+      let cfg = CfgBuilder.get_cfg !(env.cfgb) in
+      let fun_name = getNameOfFunc func.fname in
+      let fun_name = if fun_name = "main" then "main" else fun_name in
+      Sym.symbol fun_name, { fty = typs, type_op_match func.ret_type; param = names; cfg}
 
-let codegen_prog tprog= 
+let codegen_prog (tprog: TAst.program) =
   let open Ll in
-  let empty_environment = { cfgb = ref CfgBuilder.empty_cfg_builder; locals = Sym.Table.empty; loop = []} in
-  let env = codegen_func_list empty_environment tprog in
-  let cfg = CfgBuilder.get_cfg !(env.cfgb) in
-  let dolphin_main = { fty = [], I64; param = []; cfg } in
-  { tdecls = [] ; extgdecls = [] ; gdecls = [] ; extfuns = [Sym.symbol "print_integer", ([I64], Void); Sym.symbol "read_integer", ([], I64)]
-  ; fdecls = [ Sym.symbol "main", dolphin_main ] }
-
-
+  let func_decls =
+    match tprog with
+    | TAst.Program funcs -> funcs
+  in
+  (* Generate code for each function declaration *)
+  let fdecls = List.map codegen_func_list func_decls in
+  let extfuns = [
+    (Sym.symbol "print_integer", ([I64], Void));
+    (Sym.symbol "read_integer", ([], I64))
+  ] in
+  {
+    tdecls = [];
+    extgdecls = [];
+    gdecls = [];
+    extfuns = extfuns;
+    fdecls = fdecls;
+  }
 
 
 

@@ -257,14 +257,15 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
 
 (* should use typecheck_statement to check the block of statements. *)
 and typecheck_statement_seq env stms =
-  let type_stmts, _ =
+  let type_stmts, final_env =
     List.fold_left (fun (tsmts_now, env_now) stmt ->
       let tstmt, new_env = typecheck_statement env_now stmt in
       tstmt :: tsmts_now, new_env)
     ([], env)
     stms
   in
-  List.rev type_stmts, env
+  List.rev type_stmts, final_env
+
 
 (* the initial environment should include all the library functions, no local variables, and no errors. *)
 (*let initial_environment = raise Unimplemented*)
@@ -331,21 +332,19 @@ let typecheck_function_decl env (f_decl: Ast.func_decl) =
         Env.insert_local_decl acc_env sym typed_arg_type
     ) env params in
 
-    (* Typecheck body*)
-    let (typed_body, _) =
-    List.fold_left
-    (fun (acc, env) stmt ->
-      let (typed_stmt, new_env) = typecheck_statement env_with_params stmt in
+    (* Typecheck body *)
+    let typed_body, final_env = typecheck_statement_seq env_with_params body in
 
-      match stmt with 
-      | ReturnStm {ret; _} -> 
-        let (_, tp) = infertype_expr new_env ret in
-        if tp <> typed_return_type then
-          raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = typed_return_type; actual = tp; loc = loc})));
-        (acc @ [typed_stmt], new_env)
-        
-      | _ -> (acc @ [typed_stmt], new_env)
-    ) ([], env_with_params) body in
+    (* Check that all return statements have the correct type *)
+    List.iter (fun stmt ->
+    match stmt with
+    | Ast.ReturnStm { ret; loc } ->
+        let _, ret_type = infertype_expr final_env ret in
+        if ret_type <> typed_return_type then
+        raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch { expected = typed_return_type; actual = ret_type; loc})))
+     | _ -> ()
+    ) body;
+
 
     TAst.FuncDecl {
       ret_type = typed_return_type;
