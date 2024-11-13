@@ -1,0 +1,13 @@
+/* 7. Test for unique function names within the program */
+int h (x: int) {
+    return x + 1;
+}
+
+/* invalid: duplicate function name h */
+int h (y: int) {
+    return y - 1;
+}
+
+int main () {
+    return h(1);
+}

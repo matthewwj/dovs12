@@ -1,0 +1,10 @@
+/* 10. Test for a valid for loop with a comma expression in the update section */
+int main () {
+    var i = 0;
+    var j = 0;
+    for (i = 0; i < 10; (i = i + 1, j = j + 1)) {
+        print_integer(i);
+    }
+    return 0;
+}
+

@@ -1,0 +1,9 @@
+/* 2. Test for an invalid function declaration with duplicate argument names */
+/* invalid: duplicate argument x */
+int g (x: int, x: int) {
+    return x;
+}
+
+int main () {
+    return g(1, 2);
+}

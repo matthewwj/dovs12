@@ -33,12 +33,12 @@ let compile_prog pathtofile =
   
   (*let llvm_prog = Codegen.codegen_prog typedStmt in
   let llvm_ir_string = Ll.string_of_prog llvm_prog in
-  print_endline llvm_ir_string; 
-  exit 0*)
+  print_endline llvm_ir_string; *)
+  
   
   exit 0
 
 let _ =
-  compile_prog "tests/oldTests/OT1.dlp";
+  compile_prog "tests/phase4test/test10.dlp";
   
   

@@ -294,14 +294,27 @@ let rec codegen_stmt env stm =
 
 let codegen_stmt_list env stmts = List.fold_left codegen_stmt env stmts
 
+let rec codegen_func (env: cg_env) =
+  raise Unimplemented
+
+
+let codegen_func_list env tprog = 
+  raise Unimplemented
+
+
 let codegen_prog tprog= 
   let open Ll in
   let empty_environment = { cfgb = ref CfgBuilder.empty_cfg_builder; locals = Sym.Table.empty; loop = []} in
-  let env = codegen_stmt_list empty_environment tprog in
+  let env = codegen_func_list empty_environment tprog in
   let cfg = CfgBuilder.get_cfg !(env.cfgb) in
   let dolphin_main = { fty = [], I64; param = []; cfg } in
   { tdecls = [] ; extgdecls = [] ; gdecls = [] ; extfuns = [Sym.symbol "print_integer", ([I64], Void); Sym.symbol "read_integer", ([], I64)]
-  ; fdecls = [ Sym.symbol "main", dolphin_main ]}
+  ; fdecls = [ Sym.symbol "main", dolphin_main ] }
+
+
+
+
+
 
 
 

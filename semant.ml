@@ -385,9 +385,9 @@ let typecheck_prog (prg: Ast.program)  =
     | Ast.FuncDecl {ret_type; fname; _} :: _ ->
       let main = Symbol.symbol "main" in
       (match Env.lookup_var_fun envFunc main with
-      | Some (Fun FunTyp{ret; _}) -> (match ret with | Int -> () | _ -> raise Unimplemented)
-      | _ ->  raise Unimplemented)
-    | _ ->  raise Unimplemented);
+      | Some (Fun FunTyp{ret; _}) -> (match ret with | Int -> () | _ -> raise (Invalid_argument (Errors.error_to_string (Errors.NoMainFunction)));)
+      | _ ->  raise (Invalid_argument (Errors.error_to_string (Errors.NoMainFunction)));)
+    | _ ->  raise (Invalid_argument (Errors.error_to_string (Errors.NoMainFunction))););
 
   let typed_function_decls = List.map (typecheck_function_decl envFunc) function_decls in
   (TAst.Program typed_function_decls, envFunc)

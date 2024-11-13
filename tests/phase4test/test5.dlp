@@ -1,0 +1,10 @@
+/* 5. Test for function arguments being modifiable as local variables */
+int modify_arg (x: int) {
+    x = x * 2;
+    return x;
+}
+
+int main () {
+    var result = modify_arg(3); 
+    return result;
+}

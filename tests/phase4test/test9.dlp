@@ -1,0 +1,6 @@
+/* 9. Test for invalid use of a comma expression as a standalone statement */
+int main () {
+    var x = 0;
+    x = 1, x = 2;  /* Error: Our parser can't recognise this anyway */
+    return x;
+}

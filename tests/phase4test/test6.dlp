@@ -1,0 +1,10 @@
+/* 6. Test for a function without an explicit return in all paths */
+int no_return (x: int) {
+    if (x > 0) {
+        return x;
+    }
+}
+
+int main () {
+    return no_return(3);
+}

@@ -1,0 +1,20 @@
+/* 4. Test for mutual recursion between two functions */
+int even (x: int) {
+    if (x == 0) {
+        return 0;
+    } else {
+        return odd(x - 1);
+    }
+}
+
+int odd (x: int) {
+    if (x == 0) {
+        return 1;
+    } else {
+        return even(x - 1);
+    }
+}
+
+int main () {
+    return even(5);
+}

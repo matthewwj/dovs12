@@ -1,0 +1,6 @@
+/* 3. Test for a valid main function with no arguments and return type int */
+int main () {
+    var a: int = 5;
+    var b: int = 10;
+    return a + b;
+}
