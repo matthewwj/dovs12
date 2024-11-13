@@ -1,0 +1,8 @@
+/* Void function returns nothing */
+void test() {
+    
+}
+
+int main() {
+    return 2;
+}

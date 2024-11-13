@@ -1,0 +1,13 @@
+/* Void function returns something */
+void test() {
+    if (1 < 2) {
+        return 1;
+    }
+    else {
+        return 1;
+    }
+}
+
+int main() {
+    return 2;
+}

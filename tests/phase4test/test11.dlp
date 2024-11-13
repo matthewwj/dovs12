@@ -1,0 +1,8 @@
+/* Cannot declare void in params */
+int test(x: void) {
+    return 2;
+}
+
+int main() {
+    return test(1);
+}

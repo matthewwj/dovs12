@@ -29,6 +29,12 @@ let typecheck_op op =
   | Ast.Eq _loc -> TAst.Eq
   | Ast.NEq _loc -> TAst.NEq
 
+let convert_ident (ast_ident: Ast.ident) : TAst.ident =
+  match ast_ident with
+  | Ast.Ident {name; _} ->
+    let symbol = Sym.symbol name in
+    TAst.Ident {sym = symbol}
+
 let rec safe_zip l1 l2 =
   match l1, l2 with
   | a :: an, b :: bn -> (a, b) :: safe_zip an bn
@@ -125,7 +131,7 @@ and infertype_lval env lvl =
     | Some varOrFun ->
       (match varOrFun with
       | Env.Var typ -> (TAst.Lval (TAst.Var {ident = identName; tp = typ}), typ)
-      | _ -> raise Unimplemented
+      | _ -> raise (Invalid_argument (Errors.error_to_string (Errors.UndeclaredVariable {variablename = name; loc = loc})))
       )
     )
 
@@ -188,10 +194,12 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
     in
     TAst.CompoundStm {stms = List.rev type_stmts}, env
 
-  | Ast.ReturnStm {ret; loc} ->
-    let typed_ret, ret_type = infertype_expr env ret in
-    if ret_type != Int then raise (Invalid_argument (Errors.error_to_string (Errors.UnexpectedReturnType {actual = ret_type; expected = Int; loc = loc})));
-    (TAst.ReturnStm {ret = typed_ret}, env)
+    | Ast.ReturnStm {ret; loc} ->
+      let typed_ret, ret_type = infertype_expr env ret in
+      if ret_type != Int then  
+        raise (Invalid_argument (Errors.error_to_string (Errors.UnexpectedReturnType {actual = ret_type; expected = Int; loc = loc})));
+      (TAst.ReturnStm {ret = typed_ret}, env)
+  
   
   | Ast.WhileStm {cond; body; loc} -> 
     let typed_while_cond = typecheck_expr env cond Bool loc in
@@ -261,36 +269,22 @@ and typecheck_statement_seq env stms =
 (* the initial environment should include all the library functions, no local variables, and no errors. *)
 (*let initial_environment = raise Unimplemented*)
 
-(* this method will check if the given stm is a return. this is used to check the last stm of a program. *)
-let return_check stm =
-  match stm with
-  | TAst.ReturnStm _ -> 1
-  | _ -> raise UnimpRtrError
-
-
-
-
-let rec has_return stm =
+(* this method will check if the given stm is a return. *)
+let rec return_check stm =
   match stm with
   | Ast.ReturnStm {ret; _} -> 
     true
-  | CompoundStm {stms; _} -> List.exists has_return stms
+  | CompoundStm {stms; _} -> List.exists return_check stms
   | IfThenElseStm {cond = _; thbr; elbro; _} ->
-      let then_has_return = has_return thbr in
+      let then_has_return = return_check thbr in
       let else_has_return = 
         match elbro with
-        | Some el -> has_return el
+        | Some el -> return_check el
         | None -> false
       in
       then_has_return && else_has_return
   | WhileStm _ | ForStm _ -> false 
   | _ -> false
-
-let convert_ident (ast_ident: Ast.ident) : TAst.ident =
-  match ast_ident with
-  | Ast.Ident {name; _} ->
-    let symbol = Sym.symbol name in
-    TAst.Ident {sym = symbol}
 
 let typecheck_func_params env (param: Ast.param) : TAst.param =
   match param with
@@ -320,9 +314,10 @@ let typecheck_function_decl env (f_decl: Ast.func_decl) =
     ) param_names;
 
     (* Check that all paths return *)
-    let body_has_return = List.exists has_return body in
+    let body_has_return = List.exists return_check body in
     if not body_has_return then
-      raise (Invalid_argument (Errors.error_to_string (Errors.MissingReturn {loc})));
+      if typed_return_type <> TAst.Void then
+        raise (Invalid_argument (Errors.error_to_string (Errors.MissingReturn {loc})));
 
     (* Check if the function is 'main' and validate parameters *)
     if fname_name = "main" && params <> [] then
@@ -340,7 +335,8 @@ let typecheck_function_decl env (f_decl: Ast.func_decl) =
     let (typed_body, _) =
     List.fold_left
     (fun (acc, env) stmt ->
-      let (typed_stmt, new_env) = typecheck_statement env stmt in
+      let (typed_stmt, new_env) = typecheck_statement env_with_params stmt in
+
       match stmt with 
       | ReturnStm {ret; _} -> 
         let (_, tp) = infertype_expr new_env ret in
@@ -358,7 +354,7 @@ let typecheck_function_decl env (f_decl: Ast.func_decl) =
       body = typed_body
     }
 
-let add_initial_functions env (f_decl: Ast.func_decl) =
+let add_functions env (f_decl: Ast.func_decl) =
   match f_decl with
   | Ast.FuncDecl {ret_type; fname; params; loc; _} ->
     let string_name = match fname with | Ast.Ident {name; _} -> name in
@@ -367,7 +363,6 @@ let add_initial_functions env (f_decl: Ast.func_decl) =
     | None -> env
     | Some (Var _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
     | Some (Fun _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = string_name; loc})));
-    
   in
     let typed_args = List.map (typecheck_func_params new_env) params in
     let typed_return_type = typecheck_typ ret_type in
@@ -379,7 +374,7 @@ let typecheck_prog (prg: Ast.program)  =
   let env = Env.make_env RunTimeBindings.library_functions in
   match prg with
   | Ast.Program function_decls ->
-    let envFunc = List.fold_left add_initial_functions env function_decls in
+    let envFunc = List.fold_left add_functions env function_decls in
     (* Check for main function *)
     (match List.rev function_decls with
     | Ast.FuncDecl {ret_type; fname; _} :: _ ->
