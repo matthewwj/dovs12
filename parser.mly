@@ -107,6 +107,7 @@ exp:
 (*| LPAREN e = exp RPAREN {e}
 | LPAREN le = exp COMMA re = exp RPAREN {CommaExpr {lhs = le; rhs = re; loc = l $loc}} *)
 | LPAREN e = commaexprcontainer RPAREN {e}
+| s = STRING_LIT { String {str = s; loc = l $loc}}
 
 
 commaexprcontainer:
@@ -118,6 +119,7 @@ type_helper:
 | INT {Int {loc = l $loc}}
 | BOOL {Bool {loc = l $loc}}
 | VOID {Void {loc = l $loc}}
+| STRING {Str {loc = l $loc}}
 
 
 type_def:

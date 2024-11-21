@@ -7,6 +7,7 @@ let typ_to_string = function
 | Int -> "int"
 | Bool -> "bool"
 | ErrorType -> "'type error'"
+| Str -> "string"
 
 (* producing trees for pretty printing *)
 let ident_to_tree (Ident {sym}) = Pretty.make_ident_line (Sym.name sym)

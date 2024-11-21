@@ -7,6 +7,10 @@ type typ =
 | Int of {loc : Loc.location}
 | Bool of {loc : Loc.location}
 | Void of {loc : Loc.location}
+| Str of {loc : Loc.location} (* String type *)
+| Byte of {loc : Loc.location} (* Optional *)
+| Array of {typ : typ; loc : Loc.location} (* Array type *)
+
 
 type binop =
 | Plus of {loc : Loc.location}
@@ -30,6 +34,8 @@ type unop =
 type expr =
 | Integer of {int : int64; loc : Loc.location}
 | Boolean of {bool : bool; loc : Loc.location}
+| String of {str : string; loc : Loc.location}
+| LengthOf of {expr : expr; loc : Loc.location}
 | BinOp of {left : expr; op : binop; right : expr; loc : Loc.location}
 | UnOp of {op : unop; operand : expr; loc : Loc.location}
 | Lval of lval

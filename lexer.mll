@@ -10,10 +10,17 @@ let digit = ['0'-'9']
 let digits = digit+
 let letter = ['a'-'z'] | '_'
 let ident = letter (letter | digit)*
+let non_escaped_char = [^ '\\' '"'] 
+let escape_sequence = 
+  '\\' [ '"' 'n' 't' 'r' 'b' 'f' ]
+let string_char = non_escaped_char | escape_sequence
+
+let string_lit = '"' (string_char)* '"'
 
 
 rule read = parse
   | eof      {EOF}
+  | string_lit as string { STRING_LIT (Scanf.unescaped (String.sub string 1 (String.length string - 2))) }
   | "true" {TRUE}
   | "false" {FALSE}
   | "<=" {LE}
@@ -83,3 +90,5 @@ and comment nestingLevel line_com = parse
   | "\r" { comment nestingLevel line_com lexbuf }  
   | eof  { failwith "Broken comment" }
   | _   { comment nestingLevel line_com lexbuf }
+
+

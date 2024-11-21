@@ -3,7 +3,7 @@ module Sym = Symbol
 
 type ident = Ident of {sym : Sym.symbol}
 
-type typ = | Void | Int | Bool | ErrorType
+type typ = | Void | Int | Bool | ErrorType | Str
 
 type binop = | Plus | Minus | Mul | Div | Rem | Lt 
   | Le | Gt | Ge | Lor | Land | Eq | NEq
@@ -13,6 +13,8 @@ type unop = | Neg | Lnot
 type expr =
 | Integer of {int : int64}
 | Boolean of {bool : bool}
+| String of {str: string}
+| LengthOf of {expr: expr; tp : typ}
 | BinOp of {left : expr; op : binop; right : expr; tp : typ}
 | UnOp of {op : unop; operand : expr; tp : typ}
 | Lval of lval

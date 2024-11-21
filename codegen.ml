@@ -60,6 +60,7 @@ let type_op_match (tp : TAst.typ) : Ll.ty =
   | Int -> Ll.I64
   | Bool -> I1
   | ErrorType -> raise @@ UnexpectedInput "Not void/int/bool type!"
+  | Str -> Ll.Ptr Ll.I8 
 
 let type_of_expr (expr : TAst.expr) : Ll.ty =
   match expr with
@@ -71,6 +72,7 @@ let type_of_expr (expr : TAst.expr) : Ll.ty =
   | Assignment _ -> Void
   | Call { tp; _ } -> type_op_match tp
   | CommaExpr {lhs; rhs; tp} -> type_op_match tp
+  | String _ -> Ll.Ptr Ll.I8
 
 
 (* Codegen for expressions *)

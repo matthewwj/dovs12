@@ -12,6 +12,8 @@ let typecheck_typ = function
   | Ast.Int _loc -> TAst.Int
   | Ast.Bool _loc -> TAst.Bool
   | Ast.Void _loc -> TAst.Void
+  | Ast.Str _loc -> TAst.Str
+  | _ -> raise Unimplemented
 
 let typecheck_op op =
   match op with
@@ -49,6 +51,16 @@ let rec infertype_expr env expr =
   
   | Ast.Boolean {bool; _} ->
     (TAst.Boolean {bool}, TAst.Bool)
+  | Ast.String ({str = s; _}) -> 
+    (TAst.String {str = s}, TAst.Str)
+
+  | Ast.LengthOf ({expr; loc}) -> 
+    let (expr_typed, expr_type) = infertype_expr env expr in
+    (match expr_type with
+    | TAst.Str ->
+        (TAst.LengthOf {expr = expr_typed; tp = TAst.Int}, TAst.Int)
+    | _ ->
+        raise (Invalid_argument (Errors.error_to_string (Errors.InvalidLengthOf {actual = expr_type; loc = loc}))))
   
   | Ast.BinOp {left; op; right; loc} ->
     let (left_expr, left_type) = infertype_expr env left in
@@ -61,7 +73,7 @@ let rec infertype_expr env expr =
       else
         raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = TAst.Int; actual = right_type; loc = loc})))
     | Lt _ | Le _ | Gt _ | Ge _ ->
-      if left_type = TAst.Int && right_type = TAst.Int then
+      if (left_type = TAst.Int && right_type = TAst.Int) || (left_type = TAst.Str && right_type = TAst.Str) then
         (TAst.BinOp {left = left_expr; op = optyp; right = right_expr; tp = TAst.Bool}, TAst.Bool)
       else
         raise (Invalid_argument (Errors.error_to_string (Errors.TypeMismatch {expected = left_type; actual = right_type; loc = loc})))

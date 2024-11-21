@@ -38,6 +38,7 @@ type error =
 | MissingReturn of {loc: Location.location}
 | VoidInFuncParam of {loc: Location.location}
 | NoMainFunction
+| InvalidLengthOf of {actual: TAst.typ; loc: Location.location}
 
 (* other errors to be added as needed. *)
 
@@ -61,3 +62,4 @@ let error_to_string err =
   | MissingReturn {loc} -> Printf.sprintf "Missing return at %s" (location_to_string loc)
   | VoidInFuncParam {loc} -> Printf.sprintf "Cannot declare void type in function parameter %s" (location_to_string loc)
   | NoMainFunction-> Printf.sprintf "Missing main function."
+  | InvalidLengthOf {actual; loc} -> Printf.sprintf "Length mismatch: expected length %s at %s." (TPretty.typ_to_string actual) (location_to_string loc)
