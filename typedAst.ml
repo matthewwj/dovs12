@@ -3,7 +3,8 @@ module Sym = Symbol
 
 type ident = Ident of {sym : Sym.symbol}
 
-type typ = | Void | Int | Bool | ErrorType | Str
+type typ = | Void | Int | Bool | ErrorType | Str | Struct of string | Array of typ | Ptr of typ 
+| Int32 | Int8 | NilType
 
 type binop = | Plus | Minus | Mul | Div | Rem | Lt 
   | Le | Gt | Ge | Lor | Land | Eq | NEq
@@ -11,6 +12,7 @@ type binop = | Plus | Minus | Mul | Div | Rem | Lt
 type unop = | Neg | Lnot
 
 type expr =
+| Nil of {typ : typ}
 | Integer of {int : int64}
 | Boolean of {bool : bool}
 | String of {str: string}
@@ -20,10 +22,18 @@ type expr =
 | Lval of lval
 | Assignment of {lvl : lval; rhs : expr; tp : typ}
 | CommaExpr of {lhs : expr; rhs : expr; tp: typ}
-
 | Call of {fname : ident; args : expr list; tp : typ}
+| NewExpr of {tp : typ ; obj : new_init}
 and lval =
 | Var of {ident : ident; tp : typ}
+| Idx of {arr: expr; index : expr; tp : typ}
+| Fld of { rcrd : expr ; field : ident ; tp :typ ; rcrd_tp : string}
+
+and field = {name: ident; expr : expr; ty : typ}
+and record = {fields : field list}
+and array = {size: expr}
+and new_init = Record of record | Array of array
+
 
 type single_declaration = Declaration of {name : ident; tp : typ; body : expr}
 
@@ -58,5 +68,9 @@ type func_decl = FuncDecl of {
   body : statement list;
 }
 
+type record_decl = {name: ident; fields : param list}
+
+type global_elements = Function of func_decl | Record of record_decl
+
 type program = 
-  | Program of func_decl list
+  | Program of global_elements list

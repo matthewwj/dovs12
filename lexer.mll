@@ -91,4 +91,16 @@ and comment nestingLevel line_com = parse
   | eof  { failwith "Broken comment" }
   | _   { comment nestingLevel line_com lexbuf }
 
+and strings sBuf = parse
+| '"' { STRING_LIT (Buffer.contents sBuf) }
+| "\\" (ascii_digits as e) {Buffer.add_char sBuf ((Char.chr (int_of_string e))); strings sBuf lexbuf} 
+| "\\n" {Buffer.add_char sBuf '\n'; strings sBuf lexbuf}                                              
+| "\\t" {Buffer.add_char sBuf '\t'; strings sBuf lexbuf}       
+| "\\b" {Buffer.add_char sBuf '\b'; strings sBuf lexbuf}        
+| "\\r" {Buffer.add_char sBuf '\r'; strings sBuf lexbuf}                                   
+| "\\" ('"' as e) {Buffer.add_char sBuf e; strings sBuf lexbuf}
+| "\\" ("\\" as e) {Buffer.add_char sBuf e; strings sBuf lexbuf}
+| "\\" ("'" as e) {Buffer.add_char sBuf e; strings sBuf lexbuf}
+| eof { failwith "String not closed" }
+| _ as e {Buffer.add_char sBuf e; strings sBuf lexbuf }
 
