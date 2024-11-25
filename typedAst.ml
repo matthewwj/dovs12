@@ -68,7 +68,7 @@ type func_decl = FuncDecl of {
   body : statement list;
 }
 
-type record_decl = {name: ident; fields : param list}
+type record_decl = RecordDecl of {name: ident; fields : param list}
 
 type global_elements = Function of func_decl | Record of record_decl
 

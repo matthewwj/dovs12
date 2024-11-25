@@ -41,7 +41,8 @@
 %token FUNC
 
 
-
+%left COMMA
+%nonassoc DECL
 %left LOR 
 %left LAND
 %nonassoc EQ NEQ
@@ -49,6 +50,7 @@
 %left PLUS MINUS
 %left MUL DIV REM
 %left LNOT
+%left UMINUS
 %left ASSIGN
 %nonassoc ELSE
 
@@ -60,7 +62,8 @@
 %type <single_declaration> decl 
 %type <declaration_block> decl_block 
 %type <expr option> option(exp)
-
+%type <global_elements> record
+%type <field> field
 
 
 %type <func_decl> func_decl
@@ -94,8 +97,40 @@
 | MINUS {Neg {loc = l $loc}}
 | LNOT {Lnot {loc = l $loc}}
 
+field:
+    i = ident ASSIGN e = commaexprcontainer SEMICOLON {{name = i; expr = e; loc = l $loc}}
+
+new_expr:
+    id = ident LBRACE fields = list(field) RBRACE
+    {NewExpr {typ = Struct {id; loc = l $loc} ; obj = Record {fields} ; loc = l $loc}}
+    | typ = type_helper LBRACKET size = commaexprcontainer RBRACKET {NewExpr {typ; obj = Array {size}; loc = l $loc}}
+
+lval:
+    | i = IDENT {(Var (Ident {name = i; loc = l $loc}))}
+    | arr = exp LBRACKET index = commaexprcontainer RBRACKET {Idx {arr ; index ; loc = l $loc}}
+    | rcrd = exp DOT field = ident {Fld {rcrd ; field; loc = l $loc}}
 
 exp:
+    i = INT_LIT {Integer { int = i; loc = l $loc}}
+    | str = STRING_LIT {String {str ; loc = l $loc}}
+    | TRUE {Boolean {bool = ture; loc = l $loc}}
+    | FALSE {Boolean { bool = false; loc = l $loc}}
+    | LPAREN e = commaexprcontainer RPAREN
+        {e}
+    | left = exp op = binop right = exp
+        {BinOp {left; op; right; loc = l $loc}}
+    | op = unop operand = exp %prec UMINUS
+        {UnOp {op; operand ; loc = l $loc}}
+    | fname = ident LPAREN args = separated_list(COMMA, exp) RPAREN
+        {Call {fname; args; loc = l $loc}}
+    | LENGTHOF LPAREN a = exp RPAREN {LengthOf {expr = a; loc = l $loc}}
+    | i = lval ASSIGN rhs = exp
+        {Assignment {lvl = i; rhs; loc = l $loc}}
+    | i = lval {Lval i}
+    | NEW a = new_expr {a}
+    | NIL {Nil {loc = l $loc}}
+
+(*exp:
 | i = IDENT ASSIGN e = exp %prec ASSIGN { Assignment {lvl = Var (Ident {name = i; loc = l $loc}); rhs = e; loc = l $loc} }
 | i = INT_LIT {Integer {int = i; loc = l $loc}}
 | FALSE {Boolean {bool = false; loc = l $loc}}
@@ -107,7 +142,7 @@ exp:
 (*| LPAREN e = exp RPAREN {e}
 | LPAREN le = exp COMMA re = exp RPAREN {CommaExpr {lhs = le; rhs = re; loc = l $loc}} *)
 | LPAREN e = commaexprcontainer RPAREN {e}
-| s = STRING_LIT { String {str = s; loc = l $loc}}
+| s = STRING_LIT { String {str = s; loc = l $loc}}*)
 
 
 commaexprcontainer:
@@ -119,7 +154,9 @@ type_helper:
 | INT {Int {loc = l $loc}}
 | BOOL {Bool {loc = l $loc}}
 | VOID {Void {loc = l $loc}}
+| id = ident {Struct {id ; loc = l $loc}}
 | STRING {Str {loc = l $loc}}
+| LBRACKET typ = type_helper RBRACKET {ArrayType {typ ; loc = l $loc}}
 
 
 type_def:
@@ -162,19 +199,26 @@ stmts:
 r = list(stmt) 
 {r}
 
-
 func_decl:
 | ret_type = type_helper fname = ident LPAREN params = param_list RPAREN LBRACE body = stmts RBRACE
     { FuncDecl {fname; params; ret_type; body; loc = l $loc} }
 
+record:
+    RECORD name = ident LBRACE fields = list(p = param SEMICOLON {p}) RBRACE
+    {RecordDecl {name = name; fields = fields; loc = l $loc}}
 
+global_elements:
+    | f = func_decl { Function f }
+    | r = record { Record r }
+
+
+global_scope:
+    res = list(global_elements) {res}
 
 main:
-| EOF { Program []}
-| f = func_decl p = main { 
-    let Program pl = p in
-    Program (f :: pl)
-  }
+| EOF { Program [] }
+| res = global_scope EOF
+    { Program res }
 
 (*
 main:

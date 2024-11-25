@@ -11,7 +11,7 @@ type typ =
 | Ptr of {typ: typ ; loc : Loc.location}
 | Str of {loc : Loc.location} (* String type *)
 | Byte of {loc : Loc.location} (* Optional *)
-| Array of {typ : typ; loc : Loc.location} (* Array type *)
+| ArrayType of {typ : typ; loc : Loc.location} (* Array type *)
 
 
 type binop =
@@ -86,7 +86,7 @@ type func_decl = FuncDecl of {
   loc : Loc.location;
 }
 
-type record_decl = {name : ident; fields : param list; loc : Loc.location}
+type record_decl = RecordDecl of {name : ident; fields : param list; loc : Loc.location}
 
 type global_elements = Function of func_decl | Record of record_decl
 

@@ -8,7 +8,12 @@ open Parser
 
 let digit = ['0'-'9']
 let digits = digit+
+<<<<<<< Updated upstream
 let letter = ['a'-'z'] | '_' | ['A' - 'Z'] 
+=======
+let ascii_digits = ['2'] ['0'-'4'] ['0'-'9'] | ['0'-'1'] digit digit | ['2'] ['5'] ['0'-'5'] 
+let letter = ['a'-'z'] | '_'
+>>>>>>> Stashed changes
 let ident = letter (letter | digit)*
 let non_escaped_char = [^ '\\' '"'] 
 let escape_sequence = 
