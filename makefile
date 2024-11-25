@@ -1,7 +1,7 @@
 # Makefile for building the project using dune
 
 .PHONY: all clean
-OUTPUT_DIR := llvm_outputs
+OUTPUT_DIR := tests/phase5test
 
 # Default target: builds the project
 all:
@@ -20,5 +20,4 @@ test:
 	@echo "Testing semant and codegen"
 	dune build
 	./_build/default/main.exe
-#	clang $(OUTPUT_DIR)/testreadint.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output1
-#	./$(OUTPUT_DIR)/output1
+	clang $(OUTPUT_DIR)/test.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output

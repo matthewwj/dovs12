@@ -91,7 +91,7 @@ type record_decl = {name : ident; fields : param list; loc : Loc.location}
 type global_elements = Function of func_decl | Record of record_decl
 
 type program = 
-  | Program of global_elements list
+  | Program of func_decl list
 
 
 

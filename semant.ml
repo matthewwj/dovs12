@@ -206,11 +206,11 @@ let rec typecheck_statement env (stm : Ast.statement) : TAst.statement * Env.env
     in
     TAst.CompoundStm {stms = List.rev type_stmts}, env
 
-    | Ast.ReturnStm {ret; loc} ->
-      let typed_ret, ret_type = infertype_expr env ret in
-      if ret_type != Int then  
-        raise (Invalid_argument (Errors.error_to_string (Errors.UnexpectedReturnType {actual = ret_type; expected = Int; loc = loc})));
-      (TAst.ReturnStm {ret = typed_ret}, env)
+  | Ast.ReturnStm {ret; loc} ->
+    let typed_ret, ret_type = infertype_expr env ret in
+    if ret_type != Int then  
+      raise (Invalid_argument (Errors.error_to_string (Errors.UnexpectedReturnType {actual = ret_type; expected = Int; loc = loc})));
+    (TAst.ReturnStm {ret = typed_ret}, env)
   
   
   | Ast.WhileStm {cond; body; loc} -> 

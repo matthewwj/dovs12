@@ -4,7 +4,7 @@ module Semant = Semant
 
 let write_to_file (path: string) (contents: string) = 
   (* Create the full path with the 'testfiles' directory *)
-  let dir = "llvm_outputs" in
+  let dir = "tests/phase5test" in
   let full_path = Filename.concat dir path in
 
   (* Ensure the 'testfiles' directory exists, create it if it doesn't *)
@@ -27,10 +27,10 @@ let compile_prog pathtofile =
   let parse_res = Parser.main Lexer.read lex_buf in
   (* PrintBox_text.output stdout (Pretty.program_to_tree parse_res);  For printing parsetree*)
   let (typedStmt, _) = Semant.typecheck_prog parse_res in
-  (*let llvm_prog = Codegen.codegen_prog typedStmt in
+  let llvm_prog = Codegen.codegen_prog typedStmt in
   let llvm_ir_string = Ll.string_of_prog llvm_prog in
-  print_endline llvm_ir_string; *)
-  
+  print_endline llvm_ir_string;
+  write_to_file "test.ll" llvm_ir_string;
   exit 0
 
 let _ =

@@ -1,0 +1,64 @@
+int main(){
+    var _stdout = get_stdout();
+    var cmd_args = get_cmd_args();
+    var addr : ip_address = get_ipv4_address_any();
+    var port : int = 8000;
+    if (length_of(cmd_args) >= 3){
+        addr = string_to_ip_address(get_ipv4(), cmd_args[1]);
+        port = string_to_int(cmd_args[2]);
+    }
+    output_string("the ip address and port that will be used are: ", _stdout);
+    output_string(ip_address_to_string(addr), _stdout);
+    output_string(" : ", _stdout);
+    output_string(int_to_string(port), _stdout);
+    output_string("\n", _stdout);
+    var saddr = create_socket_address(addr, port);
+    var skt = create_socket(get_ipv4(), get_tcp_connection_type());
+    if(skt == nil){
+        output_string("Could not create socket.\n", get_stderr());
+        exit(1);
+    }
+    if(!socket_bind(skt, saddr)){
+        output_string("Could not bind the socket.\n", get_stderr());
+        exit(1);
+    }
+    if(!socket_listen(skt, 10)){
+        output_string("Could not listen on the socket.\n", get_stderr());
+        exit(1);
+    }
+    output_string("listening ...\n\n", _stdout);
+    while(true){
+        output_string("waiting for connection\n", _stdout);
+        flush_file (_stdout);
+        var accconn = socket_accept(skt);
+        output_string("acceptd returned\n", _stdout);
+        flush_file (_stdout);
+        if(accconn.other_side != nil){
+            output_string("Connected to ", _stdout);
+            output_string(ip_address_to_string(get_ip_address_of_socket_address(accconn.other_side)), _stdout);
+            output_string(" : ", _stdout);
+            output_string(int_to_string(get_port_of_socket_address(accconn.other_side)), _stdout);
+            output_string("\n", _stdout);
+            flush_file (_stdout);
+        } else {
+            output_string("weird corner case that should not happen\n", _stdout);
+            flush_file (_stdout);
+        }
+        var conn = accconn.connection;
+        var is = socket_get_input_stream(conn);
+        var os = socket_get_output_stream(conn);
+        var msg = bytes_array_to_string(input_bytes_array(14, is));
+        if(msg == "GET / HTTP/1.1"){
+            output_string("HTTP/1.1 200 OK\n\n <html><body>Dolphin web server working!</body><html>.\n", os);
+            output_string("response written to the socket\n", _stdout);
+        }
+        else{
+            output_string("Other side does not follow protocol.\n", _stdout);
+            output_string(msg, _stdout);
+            output_string("\n", _stdout);
+        }
+        flush_file (_stdout);
+        socket_close(conn);
+    }
+    return 0;
+}

@@ -1,19 +1,5 @@
-/* 1. Test for a valid function declaration with a return statement */
-int f (x: int, y: int) {
-    var z = "hi";
-    return x + y;
-}
-
-int q (x: string) {
-    var a = "hi";
-    var b = "ih";
-    var s = a == x;
-    return 1;
-}
-
 int main () {
-    var stringtest = "hey";
-    var test = q(stringtest);
-    return f(1, 2);
-    
+    var test = "Hello World\n";
+    var y = test;
+    return 125;
 }

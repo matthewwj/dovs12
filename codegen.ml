@@ -11,6 +11,14 @@ module Semant = Semant
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnexpectedInput of string
 
+let array_type : Ll.ty = Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]
+let array_type_name = Sym.symbol "array_type"
+let array_type : Ll.ty = Ll.Namedt array_type_name
+
+
+let array_type_of_length n : Ll.ty = Ll.Struct [Ll.I64; Ll.Array (n, Ll.I8)]
+
+
 
 type loops = {
   break_label: Sym.symbol;
@@ -20,7 +28,10 @@ type loops = {
 type cg_env = 
   { cfgb: CfgBuilder.cfg_builder ref
   ; locals: (Ll.ty * Ll.operand) Sym.Table.t
-  ; loop: loops list}
+  ; loop: loops list
+  ; str_constants: (string, Ll.gid) Hashtbl.t
+  ; gdecls: (Ll.gid * Ll.gdecl) list ref }
+
 
   (* Helper functions below*)
 let emit env b =
@@ -58,9 +69,11 @@ let type_op_match (tp : TAst.typ) : Ll.ty =
   match tp with 
   | Void -> Void 
   | Int -> Ll.I64
-  | Bool -> I1
+  | Bool -> Ll.I1
   | ErrorType -> raise @@ UnexpectedInput "Not void/int/bool type!"
-  | Str -> Ll.Ptr Ll.I8 
+  | Str -> Ll.Ptr array_type  (* Use the named type here *)
+  
+
 
 let type_of_expr (expr : TAst.expr) : Ll.ty =
   match expr with
@@ -117,11 +130,33 @@ let rec codegen_expr env expr =
   | TAst.BinOp {left; op; right; _} -> (
     let cleft = codegen_expr env left in
     let cright = codegen_expr env right in
+    let ltyp = type_of_expr left in
+    let rtyp = type_of_expr right in
     match op with 
     | TAst.Plus | TAst.Minus | TAst.Mul | TAst.Div | TAst.Rem ->
       emit_insn_with_fresh "temp_name" @@ Ll.Binop (binop_op_match op, Ll.I64, cleft, cright)
-    | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge | TAst.Eq | TAst.NEq-> 
+    | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge -> 
       emit_insn_with_fresh "temp_name" @@ Ll.Icmp (comparison_op_match op, Ll.I64, cleft, cright)
+    | TAst.Eq | TAst.NEq ->
+        if ltyp = Ll.Ptr Ll.I8 && rtyp = Ll.Ptr Ll.I8 then
+            (* String equality *)
+            let call_inst = Ll.Call (Ll.I1, Ll.Gid (Sym.symbol "compare_strings"), [
+            (Ll.Ptr (Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]), cleft);
+            (Ll.Ptr (Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]), cright)
+            ]) in
+            let eq_res = emit_insn_with_fresh "streq" call_inst in
+            if op = TAst.Eq then
+                eq_res
+            else
+                (* For NEq, invert the result *)
+                emit_insn_with_fresh "neq" @@ Ll.Icmp (Ll.Eq, Ll.I1, eq_res, Ll.BConst false)
+        else if ltyp = Ll.I64 && rtyp = Ll.I64 then
+            (* Integer comparison *)
+            let cond = comparison_op_match op in
+            emit_insn_with_fresh "icmp" @@ Ll.Icmp (cond, Ll.I64, cleft, cright)
+        else
+            raise @@ UnexpectedInput "Invalid types for equality operator"
+        
     | _ -> raise Unimplemented)
   | TAst.UnOp {op; operand; _} -> (
     let coperand = codegen_expr env operand in
@@ -165,6 +200,29 @@ let rec codegen_expr env expr =
     | _ ->
         emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
   )
+  | TAst.String {str} ->
+    let gid =
+      try Hashtbl.find env.str_constants str
+      with Not_found ->
+        let gid = fresh_symbol "str" in
+        let str_bytes = str in 
+        let str_len = String.length str_bytes in
+        let ty = array_type_of_length str_len in
+        let gdecl = (ty, Ll.GStruct [
+          (Ll.I64, Ll.GInt (str_len));
+          (Ll.Array (str_len, Ll.I8), Ll.GString str_bytes)
+        ]) in
+        Hashtbl.add env.str_constants str gid;
+        env.gdecls := (gid, gdecl) :: !(env.gdecls);
+        gid
+    in
+    let str_ptr = emit_insn_with_fresh "str_bitcast" @@
+      Ll.Bitcast (Ll.Ptr (array_type_of_length (String.length str)), Ll.Gid gid, Ll.Ptr (array_type))
+    in
+    str_ptr
+  
+  | _ -> raise Unimplemented
+
 
 let rec codegen_stmt env stm = 
   let emit = emit env in
@@ -175,7 +233,8 @@ let rec codegen_stmt env stm =
       let llty = type_op_match tp in
       let local_sym = fresh_symbol (Sym.name sym) in
       let ptr = Ll.Id local_sym in
-      emit @@ CfgBuilder.add_alloca (local_sym, llty);
+      (*emit @@ CfgBuilder.add_alloca (local_sym, llty);*)
+      emit @@ CfgBuilder.add_alloca (local_sym, Ll.Ptr array_type);
       let current_locals = env.locals in
       let new_locals = Sym.Table.add sym (llty, ptr) current_locals in
       let new_env = { env with locals = new_locals } in
@@ -314,27 +373,38 @@ let rec codegen_param (env: cg_env) (p : TAst.param) : Ll.uid * Ll.ty * cg_env=
     name_ll, typ_ll, new_env;;
 
 
-let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl =
+let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdecl) list =
   match func with
   | FuncDecl func ->
-      let empty_environment = {
-        cfgb = ref CfgBuilder.empty_cfg_builder;
-        locals = Sym.Table.empty;
-        loop = []
-      } in
+    let empty_environment = {
+      cfgb = ref CfgBuilder.empty_cfg_builder;
+      locals = Sym.Table.empty;
+      loop = [];
+      str_constants = Hashtbl.create 10;
+      gdecls = ref [];
+    } in
 
-      let names, typs, env =
-        List.fold_left (fun (ns, ts, env) p ->
-          let n, t, e = codegen_param env p in
-          (ns @ [n], ts @ [t], e)
-        ) ([], [], empty_environment) func.params
-      in
-      let env = codegen_stmt_list env func.body in
-      
-      let cfg = CfgBuilder.get_cfg !(env.cfgb) in
-      let fun_name = getNameOfFunc func.fname in
-      let fun_name = if fun_name = "main" then "main" else fun_name in
-      Sym.symbol fun_name, { fty = typs, type_op_match func.ret_type; param = names; cfg}
+    (* Codegen parameters *)
+    let names, typs, env =
+      List.fold_left (fun (ns, ts, env) p ->
+        let n, t, e = codegen_param env p in
+        (ns @ [n], ts @ [t], e)
+      ) ([], [], empty_environment) func.params
+    in
+
+    let env = codegen_stmt_list env func.body in
+
+    let cfg = CfgBuilder.get_cfg !(env.cfgb) in
+    let fun_name = getNameOfFunc func.fname in
+    let fun_name = if fun_name = "main" then "dolphin_main" else fun_name in
+    let fdecl : Ll.fdecl = {
+      Ll.fty = (typs, type_op_match func.ret_type);
+      Ll.param = names;
+      Ll.cfg = cfg
+    } in
+    (Sym.symbol fun_name, fdecl, !(env.gdecls))
+
+
 
 let codegen_prog (tprog: TAst.program) =
   let open Ll in
@@ -343,18 +413,22 @@ let codegen_prog (tprog: TAst.program) =
     | TAst.Program funcs -> funcs
   in
   (* Generate code for each function declaration *)
-  let fdecls = List.map codegen_func func_decls in
+  let fdecls_with_gdecls = List.map codegen_func func_decls in
+  let fdecls = List.map (fun (gid, fdecl, _) -> (gid, fdecl)) fdecls_with_gdecls in
+  let global_gdecls = List.flatten (List.map (fun (_, _, gdecls) -> gdecls) fdecls_with_gdecls) in
   let extfuns = [
     (Sym.symbol "print_integer", ([I64], Void));
-    (Sym.symbol "read_integer", ([], I64))
+    (Sym.symbol "read_integer", ([], I64));
+    (Sym.symbol "compare_strings", ([Ll.Ptr array_type; Ll.Ptr array_type], Ll.I64));
   ] in
   {
-    tdecls = [];
+    tdecls = [(array_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];
     extgdecls = [];
-    gdecls = [];
+    gdecls = global_gdecls;
     extfuns = extfuns;
     fdecls = fdecls;
   }
+
 
 
 
