@@ -61,16 +61,16 @@ type param = Param of {paramname : ident; typ : typ}
 
 type funtype = FunTyp of {ret : typ; params : param list}
 
-type func_decl = FuncDecl of {
+type func_decl = {
   fname : ident;
   params : param list;
   ret_type : typ; 
   body : statement list;
 }
 
-type record_decl = RecordDecl of {name: ident; fields : param list}
+type record_decl =  {name: ident; fields : param list}
 
 type global_elements = Function of func_decl | Record of record_decl
 
 type program = 
-  | Program of func_decl list
+  | Program of global_elements list

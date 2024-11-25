@@ -1,6 +1,6 @@
 (executable
  (name main)
- (modules main main parser lexer semant codegen cfgBuilder ll ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings location)
+ (modules main main parser lexer cfgBuilder ll ast typedAst symbol env errors typedPretty pretty runTimeBindings runTimeBindings location)
  (libraries printbox printbox-text)
  (flags (:standard -w -37)))
 

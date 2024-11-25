@@ -78,7 +78,7 @@ type statement =
 
 type param = Param of {name : ident; tp : typ; loc : Loc.location}
 
-type func_decl = FuncDecl of {
+type func_decl =  {
   fname : ident;
   params : param list;
   ret_type : typ; 
@@ -86,12 +86,14 @@ type func_decl = FuncDecl of {
   loc : Loc.location;
 }
 
-type record_decl = RecordDecl of {name : ident; fields : param list; loc : Loc.location}
+type record_decl = {name : ident; fields : param list; loc : Loc.location}
+
+(*type record_decl = {name : ident}*)
 
 type global_elements = Function of func_decl | Record of record_decl
 
 type program = 
-  | Program of func_decl list
+  | Program of global_elements list
 
 
 

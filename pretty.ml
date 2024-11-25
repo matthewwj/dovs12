@@ -18,11 +18,30 @@ let make_info_node_line info = PBox.line_with_style info_node_style info
 
 let ident_to_tree (Ident {name; _}) = make_ident_line name
 
+
+let rec ast_typ tp =
+  match tp with
+  | Bool _ -> "bool"
+  | Int _ -> "int"
+  | Struct { id = Ident { name; _ }; _ } -> name
+  | Str _ -> "String"
+  | ArrayType _ -> "Array"
+  | Ptr a -> "Ptr " ^ ast_typ a.typ
+;;
+
 let typ_to_tree tp =
   match tp with
   | Bool _ -> make_typ_line "Bool"
   | Int _ -> make_typ_line "Int"
+  | Struct {id = Ident {name; _}; _} -> make_typ_line name
+  | Str _ -> make_typ_line  "String"
+  | ArrayType _ -> make_typ_line "Array"
+  | Ptr a -> make_typ_line ("Ptr" ^ ast_typ a.typ)
 
+let ident_fix name =
+  match name with
+  | Ident { name; _ } -> name
+;;
 
 let binop_to_tree op =
     match op with
@@ -57,9 +76,38 @@ let unop_to_tree op =
       PBox.tree (make_info_node_line "Call")
         [PBox.hlist ~bars:false [make_info_node_line "FunName: "; ident_to_tree fname];
          PBox.tree (make_info_node_line "Args") (List.map (fun e -> expr_to_tree e) args)]
+    | CommaExpr {lhs; rhs; _} -> PBox.tree (make_info_node_line "CommaExpr") [expr_to_tree lhs; expr_to_tree rhs]
+    | NewExpr e ->
+      PBox.hlist
+      ~bars:false
+      [make_info_node_line ("NewExpr " ^ ast_typ e.typ ^ " "); PBox.line (new_expr_str e.obj)]
+    | String {str; _} ->
+      PBox.hlist 
+      ~bars:false
+      [make_info_node_line "StringLit("; PBox.line str; make_info_node_line ")"]
+    | LengthOf e -> PBox.tree (make_info_node_line "length_of") [ expr_to_tree e.expr ]
+    | Nil _ -> PBox.tree (make_info_node_line "Nil") []
   and lval_to_tree l =
     match l with
     | Var ident -> PBox.hlist ~bars:false [make_info_node_line "Var("; ident_to_tree ident; make_info_node_line ")"]
+    | Idx e ->
+      PBox.tree
+        (make_info_node_line "array lookup")
+        [ expr_to_tree e.arr; expr_to_tree e.index ]
+    | Fld _ -> PBox.hlist ~bars:false [ make_info_node_line "record_lookup(" ]
+and new_expr_str (e : Ast.new_init) : string =
+  match e with
+  | Ast.Record e ->
+    "{"
+    ^ String.concat
+        "; "
+        (List.map
+           (fun (e : Ast.field) ->
+             ident_fix e.name ^ " = " ^ PrintBox_text.to_string (expr_to_tree e.expr))
+           e.fields)
+    ^ "}"
+  | Ast.Array e -> "[" ^ PrintBox_text.to_string (expr_to_tree e.size) ^ "]"
+;;
 
 let single_declaration_to_tree (Declaration {name; tp; body; _}) =
   PBox.tree (make_keyword_line "Declaration") 
@@ -98,20 +146,63 @@ let rec statement_to_tree c =
   | ReturnStm {ret; _} -> PBox.hlist ~bars:false [make_keyword_line "ReturnValStm: "; expr_to_tree ret]
 and statement_seq_to_forest stms = List.map statement_to_tree stms
 
+let program_to_tree prog =
+  PBox.tree (make_info_node_line "Program") (statement_seq_to_forest prog)
+;;
+
 let function_arg_to_tree (Param {name; tp; _}) =
   PBox.tree (make_keyword_line "FunctionArg") 
     [PBox.hlist ~bars:false [make_info_node_line "ArgName: "; ident_to_tree name]; 
     PBox.hlist ~bars:false [make_info_node_line "ArgType: "; typ_to_tree tp]]
 
-let function_decl_to_tree (FuncDecl {ret_type; fname; params; body; _}) =
+let function_decl_to_tree ({ret_type; fname; params; body; _}) =
   PBox.tree (make_keyword_line "FunctionDecl")
     [PBox.hlist ~bars:false [make_info_node_line "ReturnType: "; typ_to_tree ret_type];
      PBox.hlist ~bars:false [make_info_node_line "FunctionName: "; ident_to_tree fname];
      PBox.tree (make_info_node_line "FunctionArgs") (List.map function_arg_to_tree params);
      PBox.hlist ~bars:false [make_info_node_line "FunctionBody: "; PBox.tree (make_keyword_line "FunctionBody") (statement_seq_to_forest body)]]
 
-let program_to_tree prog = 
-  PBox.tree (make_info_node_line "Program") (
-    match prog with
-    | Program functions -> List.map function_decl_to_tree functions
-  )
+  let program_to_tree prog =
+    PBox.tree (make_info_node_line "Program") (statement_seq_to_forest prog)
+  ;;
+
+  
+let funcs_to_tree (funcs : func_decl list) =
+  List.map
+    (fun { ret_type; fname; params; body; _ } ->
+      PBox.tree
+        (make_info_node_line
+           (ast_typ ret_type
+            ^ " "
+            ^ ident_fix fname
+            ^ " ("
+            ^ String.concat
+                ", "
+                (List.map (fun (Param {name; tp; _}) -> ident_fix name ^ ":" ^ ast_typ tp) params)
+            ^ ")"))
+        (statement_seq_to_forest body))
+    funcs
+;;
+
+  let structs_to_tree (records : Ast.record_decl list) =
+    List.map
+      (fun { name; fields; _ } ->
+        PBox.tree
+          (make_info_node_line ("struct " ^ ident_fix name))
+          (List.map function_arg_to_tree fields))
+      records
+  ;;
+  
+  let real_prog_print prog =
+    let func_decls, record_decls =
+      List.partition_map
+        (fun e ->
+          match e with
+          | Ast.Function e -> Left e
+          | Ast.Record r -> Right r)
+        prog
+    in
+    PBox.tree
+      (make_info_node_line "Program")
+      (structs_to_tree record_decls @ funcs_to_tree func_decls)
+  ;;

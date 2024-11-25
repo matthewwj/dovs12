@@ -62,7 +62,7 @@
 %type <single_declaration> decl 
 %type <declaration_block> decl_block 
 %type <expr option> option(exp)
-%type <global_elements> record
+%type <record_decl> record_decl
 %type <field> field
 
 
@@ -113,7 +113,7 @@ lval:
 exp:
     i = INT_LIT {Integer { int = i; loc = l $loc}}
     | str = STRING_LIT {String {str ; loc = l $loc}}
-    | TRUE {Boolean {bool = ture; loc = l $loc}}
+    | TRUE {Boolean {bool = true; loc = l $loc}}
     | FALSE {Boolean { bool = false; loc = l $loc}}
     | LPAREN e = commaexprcontainer RPAREN
         {e}
@@ -201,15 +201,21 @@ r = list(stmt)
 
 func_decl:
 | ret_type = type_helper fname = ident LPAREN params = param_list RPAREN LBRACE body = stmts RBRACE
-    { FuncDecl {fname; params; ret_type; body; loc = l $loc} }
+    { {fname; params; ret_type; body; loc = l $loc} }
 
-record:
+record_decl:
     RECORD name = ident LBRACE fields = list(p = param SEMICOLON {p}) RBRACE
-    {RecordDecl {name = name; fields = fields; loc = l $loc}}
+    {{name = name; fields = fields; loc = l $loc}}
+
+(*record:
+| id = ident {Struct {id ; loc = l $loc}}*)
 
 global_elements:
     | f = func_decl { Function f }
-    | r = record { Record r }
+    | r = record_decl { 
+        Printf.printf "DEBUG: Wrapping record_decl in Record\n%!";
+        Record r 
+      }
 
 
 global_scope:

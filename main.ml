@@ -26,11 +26,11 @@ let compile_prog pathtofile =
   let lex_buf = Lexing.from_string normalized_str in
   let parse_res = Parser.main Lexer.read lex_buf in
   (* PrintBox_text.output stdout (Pretty.program_to_tree parse_res);  For printing parsetree*)
-  let (typedStmt, _) = Semant.typecheck_prog parse_res in
+  (*let (typedStmt, _) = Semant.typecheck_prog parse_res in
   let llvm_prog = Codegen.codegen_prog typedStmt in
   let llvm_ir_string = Ll.string_of_prog llvm_prog in
   print_endline llvm_ir_string;
-  write_to_file "test.ll" llvm_ir_string;
+  write_to_file "test.ll" llvm_ir_string;*)
   exit 0
 
 let _ =
