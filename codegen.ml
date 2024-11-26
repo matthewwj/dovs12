@@ -373,39 +373,59 @@ let rec codegen_param (env: cg_env) (p : TAst.param) : Ll.uid * Ll.ty * cg_env=
     name_ll, typ_ll, new_env;;
 
 
-let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdecl) list =
-  match func with
-  | FuncDecl func ->
-    let empty_environment = {
-      cfgb = ref CfgBuilder.empty_cfg_builder;
-      locals = Sym.Table.empty;
-      loop = [];
-      str_constants = Hashtbl.create 10;
-      gdecls = ref [];
-    } in
 
-    (* Codegen parameters *)
-    let names, typs, env =
-      List.fold_left (fun (ns, ts, env) p ->
-        let n, t, e = codegen_param env p in
-        (ns @ [n], ts @ [t], e)
-      ) ([], [], empty_environment) func.params
+let codegen_record (record : TAst.record_decl) : Ll.gid * Ll.gdecl =
+  match record with
+  | { name = TAst.Ident { sym }; fields } ->
+    let record_name = Sym.symbol (Symbol.name sym) in
+    let field_types = List.map (fun (TAst.Param { typ; _ }) -> type_op_match typ) fields in
+    let field_initializers = 
+      List.map2
+        (fun typ init ->
+          match typ with
+          | Ll.I64 -> (Ll.I64, Ll.GInt 0) 
+          | Ll.Ptr _ -> (typ, Ll.GNull) 
+          | Ll.I1 -> (Ll.I1, Ll.GInt 0) 
+          | _ -> raise @@ UnexpectedInput "Unsupported field type in record")
+        field_types field_types
     in
-
-    let env = codegen_stmt_list env func.body in
-
-    let cfg = CfgBuilder.get_cfg !(env.cfgb) in
-    let fun_name = getNameOfFunc func.fname in
-    let fun_name = if fun_name = "main" then "dolphin_main" else fun_name in
-    let fdecl : Ll.fdecl = {
-      Ll.fty = (typs, type_op_match func.ret_type);
-      Ll.param = names;
-      Ll.cfg = cfg
-    } in
-    (Sym.symbol fun_name, fdecl, !(env.gdecls))
+    let struct_type = Ll.Struct field_types in
+    (record_name, (struct_type, Ll.GStruct field_initializers))
 
 
 
+let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdecl) list =
+  let empty_environment = {
+    cfgb = ref CfgBuilder.empty_cfg_builder;
+    locals = Sym.Table.empty;
+    loop = [];
+    str_constants = Hashtbl.create 10;
+    gdecls = ref [];
+  } in
+
+  (* Codegen parameters *)
+  let names, typs, env =
+    List.fold_left (fun (ns, ts, env) p ->
+      let n, t, e = codegen_param env p in
+      (ns @ [n], ts @ [t], e)
+    ) ([], [], empty_environment) func.params
+  in
+
+  let env = codegen_stmt_list env func.body in
+
+  let cfg = CfgBuilder.get_cfg !(env.cfgb) in
+  let fun_name = getNameOfFunc func.fname in
+  let fun_name = if fun_name = "main" then "dolphin_main" else fun_name in
+  let fdecl : Ll.fdecl = {
+    Ll.fty = (typs, type_op_match func.ret_type);
+    Ll.param = names;
+    Ll.cfg = cfg
+  } in
+  (Sym.symbol fun_name, fdecl, !(env.gdecls))
+
+
+
+(*
 let codegen_prog (tprog: TAst.program) =
   let open Ll in
   let func_decls =
@@ -420,6 +440,40 @@ let codegen_prog (tprog: TAst.program) =
     (Sym.symbol "print_integer", ([I64], Void));
     (Sym.symbol "read_integer", ([], I64));
     (Sym.symbol "compare_strings", ([Ll.Ptr array_type; Ll.Ptr array_type], Ll.I64));
+  ] in
+  {
+    tdecls = [(array_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];
+    extgdecls = [];
+    gdecls = global_gdecls;
+    extfuns = extfuns;
+    fdecls = fdecls;
+  }
+*)
+let codegen_prog (tprog: TAst.program) =
+  let open Ll in
+  let funcs, records =
+    match tprog with
+    | TAst.Program globals ->
+      List.fold_left
+        (fun (funcs, records) elem ->
+          match elem with
+          | TAst.Function func -> (func :: funcs, records)
+          | TAst.Record record -> (funcs, record :: records))
+        ([], [])
+        globals
+  in
+
+  let func_results = List.map codegen_func funcs in
+  let fdecls = List.map (fun (gid, fdecl, _) -> (gid, fdecl)) func_results in
+  let record_results = List.map codegen_record records in
+  let global_gdecls =
+    List.flatten (List.map (fun (_, _, gdecls) -> gdecls) func_results) @ record_results
+  in
+
+  let extfuns = [
+    (Sym.symbol "print_integer", ([I64], Void));
+    (Sym.symbol "read_integer", ([], I64));
+    (Sym.symbol "compare_strings", ([Ll.Ptr array_type; Ll.Ptr array_type], Ll.I1));
   ] in
   {
     tdecls = [(array_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];

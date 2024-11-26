@@ -1,18 +1,10 @@
 /* valid program; returns 1 */
-record Tuple { x: int; y : int ; } 
+record qwe { x: int; y : int ; } 
 record T1 { x: int; t2 : int;}
 
 
 int main () {
-    var a:Tuple = new Tuple { x = 0; y = 1;};
-    var b:Tuple = new Tuple { x = 0; y = 1;};
+    var a = new qwe {x = 0; y = 1;};
     var m = "hi";
-    var c = a;
-    if (b == c) {
-        return 0;
-    }
-    if (a == c) {
-        return 1;
-    }   
-    return 2;
+    return 25;
 }

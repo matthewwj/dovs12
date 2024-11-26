@@ -20,4 +20,4 @@ test:
 	@echo "Testing semant and codegen"
 	dune build
 	./_build/default/main.exe
-#	clang $(OUTPUT_DIR)/test.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output
+	clang $(OUTPUT_DIR)/test.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output
