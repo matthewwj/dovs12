@@ -110,8 +110,8 @@ lval:
     | arr = exp LBRACKET index = commaexprcontainer RBRACKET {Idx {arr ; index ; loc = l $loc}}
     | rcrd = exp DOT field = ident {Fld {rcrd ; field; loc = l $loc}}
 
-exp:
-    i = INT_LIT {Integer { int = i; loc = l $loc}}
+(*exp:
+    | i = INT_LIT {Integer { int = i; loc = l $loc}}
     | str = STRING_LIT {String {str ; loc = l $loc}}
     | TRUE {Boolean {bool = true; loc = l $loc}}
     | FALSE {Boolean { bool = false; loc = l $loc}}
@@ -128,9 +128,9 @@ exp:
         {Assignment {lvl = i; rhs; loc = l $loc}}
     | i = lval {Lval i}
     | NEW a = new_expr {a}
-    | NIL {Nil {loc = l $loc}}
+    | NIL {Nil {loc = l $loc}} *)
 
-(*exp:
+exp:
 | i = IDENT ASSIGN e = exp %prec ASSIGN { Assignment {lvl = Var (Ident {name = i; loc = l $loc}); rhs = e; loc = l $loc} }
 | i = INT_LIT {Integer {int = i; loc = l $loc}}
 | FALSE {Boolean {bool = false; loc = l $loc}}
@@ -142,7 +142,12 @@ exp:
 (*| LPAREN e = exp RPAREN {e}
 | LPAREN le = exp COMMA re = exp RPAREN {CommaExpr {lhs = le; rhs = re; loc = l $loc}} *)
 | LPAREN e = commaexprcontainer RPAREN {e}
-| s = STRING_LIT { String {str = s; loc = l $loc}}*)
+| s = STRING_LIT { String {str = s; loc = l $loc}}
+| NEW a = new_expr {a}
+| NIL {Nil {loc = l $loc}}
+| i = lval ASSIGN rhs = exp
+        {Assignment {lvl = i; rhs; loc = l $loc}}
+| i = lval {Lval i}
 
 
 commaexprcontainer:
@@ -213,7 +218,6 @@ record_decl:
 global_elements:
     | f = func_decl { Function f }
     | r = record_decl { 
-        Printf.printf "DEBUG: Wrapping record_decl in Record\n%!";
         Record r 
       }
 

@@ -19,6 +19,7 @@ let typ_to_tree tp =
   | Bool -> Pretty.make_typ_line "Bool"
   | ErrorType -> PBox.line_with_style (PBox.Style.set_bg_color PBox.Style.Red PBox.Style.default) "ErrorType"
 
+
 let binop_to_tree op =
   match op with
   | Plus -> Pretty.make_keyword_line "PLUS"

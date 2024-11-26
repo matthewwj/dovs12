@@ -39,6 +39,11 @@ type error =
 | VoidInFuncParam of {loc: Location.location}
 | NoMainFunction
 | InvalidLengthOf of {actual: TAst.typ; loc: Location.location}
+| UndeclaredRecord of {recordname : string}
+| DuplicateFieldNames of {loc : Location.location}
+| UnknownField of {loc : Location.location}
+| NotAnArray of {loc : Location.location}
+| NotARecord of {loc : Location.location}
 
 (* other errors to be added as needed. *)
 
@@ -63,3 +68,8 @@ let error_to_string err =
   | VoidInFuncParam {loc} -> Printf.sprintf "Cannot declare void type in function parameter %s" (location_to_string loc)
   | NoMainFunction-> Printf.sprintf "Missing main function."
   | InvalidLengthOf {actual; loc} -> Printf.sprintf "Length mismatch: expected length %s at %s." (TPretty.typ_to_string actual) (location_to_string loc)
+  | UndeclaredRecord { recordname} -> Printf.sprintf "Undeclared variable %s" recordname
+  | DuplicateFieldNames {loc} -> Printf.sprintf "Record contains duplicate field names at %s " (location_to_string loc)
+  | UnknownField {loc} -> Printf.sprintf "Unknown field at %s " (location_to_string loc)
+  | NotAnArray {loc} -> Printf.sprintf "Unknown array at %s " (location_to_string loc)
+  | NotARecord {loc} -> Printf.sprintf "Unknown record at %s " (location_to_string loc)

@@ -86,9 +86,7 @@ type func_decl =  {
   loc : Loc.location;
 }
 
-type record_decl = {name : ident; fields : param list; loc : Loc.location}
-
-(*type record_decl = {name : ident}*)
+type record_decl = {name : ident; fields : param list; loc : Loc.location;}
 
 type global_elements = Function of func_decl | Record of record_decl
 

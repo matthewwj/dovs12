@@ -1,9 +1,18 @@
 /* valid program; returns 1 */
-record tuple { x: int; y : int ; } 
+record Tuple { x: int; y : int ; } 
+record T1 { x: int; t2 : int;}
+
 
 int main () {
-    var a:tuple = new tuple { x = 0; y = 1;};
-    var b:tuple = new tuple { x = 0; y = 1;};
-  
+    var a:Tuple = new Tuple { x = 0; y = 1;};
+    var b:Tuple = new Tuple { x = 0; y = 1;};
+    var m = "hi";
+    var c = a;
+    if (b == c) {
+        return 0;
+    }
+    if (a == c) {
+        return 1;
+    }   
     return 2;
 }
