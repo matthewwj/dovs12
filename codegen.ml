@@ -138,7 +138,7 @@ let rec codegen_expr env expr =
     | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge -> 
       emit_insn_with_fresh "temp_name" @@ Ll.Icmp (comparison_op_match op, Ll.I64, cleft, cright)
     | TAst.Eq | TAst.NEq ->
-        if ltyp = Ll.Ptr Ll.I8 && rtyp = Ll.Ptr Ll.I8 then
+        if ltyp = Ll.Ptr array_type && rtyp = Ll.Ptr array_type then
             (* String equality *)
             let call_inst = Ll.Call (Ll.I1, Ll.Gid (Sym.symbol "compare_strings"), [
             (Ll.Ptr (Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]), cleft);

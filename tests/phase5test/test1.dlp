@@ -4,7 +4,7 @@ record T1 { x: int; t2 : int;}
 
 
 int main () {
-    var a = new qwe {x = 0; y = 1;};
     var m = "hi";
-    return 25;
+    var z = m == m;
+    return 2;
 }
