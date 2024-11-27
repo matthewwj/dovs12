@@ -78,13 +78,26 @@ let rec type_op_match (tp : TAst.typ) : Ll.ty =
   | Int -> Ll.I64
   | Bool -> Ll.I1
   | ErrorType -> raise @@ UnexpectedInput "Not void/int/bool type!"
-  | Str -> ll_string_type  (* Use the named type here *)
+  | Str -> ll_string_type
   | Int8 -> Ll.I8 
   | Struct s -> Ll.Ptr (Ll.Namedt (Sym.symbol s))
   | Ptr Void -> Ll.Ptr Ll.I8
   | Ptr e -> Ll.Ptr (type_op_match e)
   | Array e -> Ll.Ptr (type_op_match e)
+  | NilType -> Ll.Void
+  | Int32 -> Ll.I32
 
+let struct_tp_to_sym tp =
+  match tp with
+  | TAst.Struct s -> s
+  | TAst.Ptr (TAst.Struct s) -> s
+  | _ -> raise Unimplemented
+
+
+let without_ptr e =
+  match e with
+  | Ll.Ptr a -> a
+  | _ -> failwith "not a pointer"
 
 let type_of_expr (expr : TAst.expr) : Ll.ty =
   match expr with
@@ -92,11 +105,19 @@ let type_of_expr (expr : TAst.expr) : Ll.ty =
   | Boolean _ -> I1
   | BinOp { tp; _ } -> type_op_match tp
   | UnOp { tp; _ } -> type_op_match tp
-  | Lval (Var { tp; _ }) -> type_op_match tp
+  | Lval e ->
+    type_op_match
+      (match e with
+       | Var { tp; _ } -> tp
+       | Idx { tp; _ } -> tp
+       | Fld { tp; _ } -> tp)
   | Assignment _ -> Void
   | Call { tp; _ } -> type_op_match tp
-  | CommaExpr {lhs; rhs; tp} -> type_op_match tp
-  | String _ -> Ll.Ptr Ll.I8
+  | CommaExpr { tp; _ } -> type_op_match tp
+  | NewExpr { tp; _ } -> type_op_match tp
+  | String _ -> ll_string_type
+  | LengthOf _ -> I64
+  | Nil { typ } -> type_op_match typ
 
 
 (* Codegen for expressions *)
@@ -109,6 +130,50 @@ let rec codegen_expr env expr =
   in
   let ( >> ) a b = emit_insn_with_fresh a b in
   let cexp = codegen_expr env in
+  (* Define codegen_lval *)
+  let rec codegen_lval lval =
+    match lval with
+    | TAst.Var { ident = Ident { sym }; tp } -> (
+        let llty = type_op_match tp in
+        match Sym.Table.find_opt sym env.locals with
+        | Some (_, llop) -> (llty, llop)
+        | None -> raise @@ UnexpectedInput "Variable not found"
+      )
+    | TAst.Idx { arr; index; tp } -> (
+        let arr_op = codegen_expr env arr in
+        let index_op = codegen_expr env index in
+        let arr_ty = type_of_expr arr in
+        let elem_ty = type_op_match tp in
+        (* Adjust GEP indices for array representation *)
+        let ptr =
+          emit_insn_with_fresh "gep_idx"
+          @@ Ll.Gep (arr_ty, arr_op, [ Ll.IConst32 0l; Ll.IConst32 1l; index_op ])
+        in
+        (elem_ty, ptr)
+      )
+    | TAst.Fld { rcrd; field = Ident { sym = field_sym }; tp; rcrd_tp } -> (
+        let rcrd_op = codegen_expr env rcrd in
+        let rcrd_ty = type_of_expr rcrd in
+        let elem_ty = type_op_match tp in
+        let field_index =
+          match Sym.Table.find_opt (Sym.symbol rcrd_tp) env.str_constants with
+          | Some field_table -> (
+              match Sym.Table.find_opt field_sym field_table with
+              | Some idx -> idx
+              | None -> raise @@ UnexpectedInput "Field not found in record"
+            )
+          | None -> raise @@ UnexpectedInput "Record type not found"
+        in
+        let ptr =
+          emit_insn_with_fresh "gep_fld"
+          @@ Ll.Gep
+               (rcrd_ty, rcrd_op, [ Ll.IConst32 0l; Ll.IConst32 (Int32.of_int field_index) ])
+        in
+        (elem_ty, ptr)
+      )
+  
+  in
+
   let rec logic_help left right is_or = 
     let short_circuit_label = fresh_symbol "logic_short_circ" in
     let cond_label = fresh_symbol "logic_next" in
@@ -178,22 +243,16 @@ let rec codegen_expr env expr =
     | TAst.Lnot -> 
       emit_insn_with_fresh "not" @@ Ll.Icmp (Eq, Ll.I1, Ll.BConst true, coperand)
   )
-  | TAst.Lval (Var {ident = Ident {sym}; tp}) -> (
-    let llty = type_op_match tp in
-    match Sym.Table.find_opt sym env.locals with
-    | Some (llty, llop) -> 
-      (* Load the value from the memory address *)
-      emit_insn_with_fresh "load" @@ Ll.Load (llty, llop);
-    | None -> raise @@ UnexpectedInput "Variable not found"
-  )
-  | TAst.Assignment {lvl = Var {ident = Ident {sym}; _}; rhs; _} -> (
-    let crhs = codegen_expr env rhs in
-    match Sym.Table.find_opt sym env.locals with
-    | Some (llty, llop) ->
-      emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, crhs, llop));
+  | TAst.Lval lval -> (
+      let (llty, ptr) = codegen_lval lval in
+      emit_insn_with_fresh "load" @@ Ll.Load (llty, ptr)
+    )
+    | TAst.Assignment { lvl; rhs; _ } -> (
+      let crhs = codegen_expr env rhs in
+      let (llty, ptr) = codegen_lval lvl in
+      emit @@ CfgBuilder.add_insn (None, Ll.Store (llty, crhs, ptr));
       crhs
-    | None -> raise @@ UnexpectedInput "Variable not found"
-  )
+    )
   | TAst.CommaExpr {lhs; rhs; tp} -> (
     let _ = codegen_expr env lhs in
     let rhs = codegen_expr env rhs in
@@ -232,6 +291,59 @@ let rec codegen_expr env expr =
   
   | TAst.Nil _ -> Null
 
+  | TAst.NewExpr { tp; obj } ->
+    let open Ll in
+    let typ = type_op_match tp in
+    (match obj with
+     | TAst.Record { fields } ->
+       let typ = without_ptr typ in
+       let typ_name = struct_tp_to_sym tp in
+       let obj_table = Sym.Table.find (Symbol.symbol typ_name) env.str_constants in
+       let size_ptr = "size_ptr" >> Gep (typ, Null, [ ic32 1 ]) in
+       let size = "size" >> Ptrtoint (typ, size_ptr, I32) in
+       let alloc =
+         "malloc_ptr" >> Call (Ptr I8, Gid (Symbol.symbol "allocate_record"), [ I32, size ])
+       in
+       let bitcast = typ_name ^ "_ptr" >> Bitcast (Ptr I8, alloc, Ptr typ) in
+       (*set values*)
+       let _ =
+         List.map
+           (fun ({ name; expr; ty } : TAst.field) ->
+             let v = codegen_expr env expr in
+             let index = Sym.Table.find (ident_to_sym name) obj_table in
+             let gep = "gep" >> Ll.Gep (typ, bitcast, [ ic32 0; ic32 index ]) in
+             emit @@ CfgBuilder.add_insn (None, Store (type_op_match ty, v, gep));
+             ())
+           fields
+       in
+       bitcast
+     | TAst.Array { size } ->
+       let size_ptr = "size_ptr" >> Gep (typ, Null, [ IConst64 1L ]) in
+       let size_elem = "size" >> Ptrtoint (typ, size_ptr, I32) in
+       let size = codegen_expr env size in
+       let def_val =
+         match tp with
+         | TAst.Str -> Gid (Symbol.symbol "dolphin_rc_empty_string")
+         | TAst.Struct _ | TAst.Ptr _ | TAst.Array _ -> Null
+         | _ -> Ll.IConst64 0L
+       in
+       let default_value = "default_val_" >> Ll.Alloca typ in
+       let _ =
+         emit @@ CfgBuilder.add_insn (None, Ll.Store (typ, def_val, default_value))
+       in
+       let bitcast_default_value =
+         "bitcast" >> Ll.Bitcast (Ptr typ, default_value, Ptr I8)
+       in
+       let alloc =
+         "malloc_ptr"
+         >> Call
+              ( Ptr I8
+              , Gid (Symbol.symbol "allocate_array")
+              , [ I32, size_elem; I64, size; Ptr I8, bitcast_default_value ] )
+       in
+       let bitcast = "bitcast" >> Ll.Bitcast (Ptr I8, alloc, typ) in
+       bitcast)
+
   | TAst.LengthOf e ->
     let op = cexp e.expr in
     (match e.tp_expr with
@@ -244,6 +356,8 @@ let rec codegen_expr env expr =
             (Ll.I64, Ll.Gid (Symbol.symbol "dolphin_rc_get_array_length"), [ Ll.Ptr Ll.I64, bitcast ])
      | _ -> failwith "lengthof not arr or string - doesn't happen")
 
+  | _ -> raise Unimplemented
+
 
 let rec codegen_stmt env stm = 
   let emit = emit env in
@@ -254,8 +368,7 @@ let rec codegen_stmt env stm =
       let llty = type_op_match tp in
       let local_sym = fresh_symbol (Sym.name sym) in
       let ptr = Ll.Id local_sym in
-      (*emit @@ CfgBuilder.add_alloca (local_sym, llty);*)
-      emit @@ CfgBuilder.add_alloca (local_sym, ll_string_type);
+      emit @@ CfgBuilder.add_alloca (local_sym, llty);  (* Use the correct type here *)
       let current_locals = env.locals in
       let new_locals = Sym.Table.add sym (llty, ptr) current_locals in
       let new_env = { env with locals = new_locals } in
@@ -263,6 +376,7 @@ let rec codegen_stmt env stm =
       new_env
     )
     env decls
+  
 
   | TAst.ExprStm {expr} ->
     (match expr with 
@@ -395,34 +509,41 @@ let rec codegen_param (env: cg_env) (p : TAst.param) : Ll.uid * Ll.ty * cg_env=
 
 
 
-let codegen_record (record : TAst.record_decl) : Ll.gid * Ll.gdecl =
+let codegen_record (record : TAst.record_decl) :
+  (Sym.symbol * Ll.ty) * (Sym.symbol * int Sym.Table.t) =
   match record with
   | { name = TAst.Ident { sym }; fields } ->
-    let record_name = Sym.symbol (Symbol.name sym) in
-    let field_types = List.map (fun (TAst.Param { typ; _ }) -> type_op_match typ) fields in
-    let field_initializers = 
-      List.map2
-        (fun typ init ->
-          match typ with
-          | Ll.I64 -> (Ll.I64, Ll.GInt 0) 
-          | Ll.Ptr _ -> (typ, Ll.GNull) 
-          | Ll.I1 -> (Ll.I1, Ll.GInt 0) 
-          | _ -> raise @@ UnexpectedInput "Unsupported field type in record")
-        field_types field_types
-    in
-    let struct_type = Ll.Struct field_types in
-    (record_name, (struct_type, Ll.GStruct field_initializers))
+      let record_name = sym in
+      let field_types =
+        List.map (fun (TAst.Param { typ; _ }) -> type_op_match typ) fields
+      in
+      let field_names =
+        List.map (fun (TAst.Param { paramname = TAst.Ident { sym }; _ }) -> sym) fields
+      in
+      let field_indices =
+        List.mapi (fun idx sym -> (sym, idx)) field_names
+      in
+      let field_table =
+        List.fold_left
+          (fun acc (sym, idx) -> Sym.Table.add sym idx acc)
+          Sym.Table.empty field_indices
+      in
+      let struct_type = Ll.Struct field_types in
+      ((record_name, struct_type), (record_name, field_table))
 
 
 
-let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdecl) list =
-  let empty_environment = {
-    cfgb = ref CfgBuilder.empty_cfg_builder;
-    locals = Sym.Table.empty;
-    loop = [];
-    str_constants = Sym.Table.empty;
-    gdecls = ref [];
-  } in
+and codegen_func str_constants (func : TAst.func_decl) :
+    Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdecl) list =
+  let empty_environment =
+    {
+      cfgb = ref CfgBuilder.empty_cfg_builder;
+      locals = Sym.Table.empty;
+      loop = [];
+      str_constants = str_constants;
+      gdecls = ref [];
+    }
+  in
 
   (* Codegen parameters *)
   let names, typs, env =
@@ -445,64 +566,61 @@ let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdec
   (Sym.symbol fun_name, fdecl, !(env.gdecls))
 
 
-
-(*
-let codegen_prog (tprog: TAst.program) =
-  let open Ll in
-  let func_decls =
-    match tprog with
-    | TAst.Program funcs -> funcs
-  in
-  (* Generate code for each function declaration *)
-  let fdecls_with_gdecls = List.map codegen_func func_decls in
-  let fdecls = List.map (fun (gid, fdecl, _) -> (gid, fdecl)) fdecls_with_gdecls in
-  let global_gdecls = List.flatten (List.map (fun (_, _, gdecls) -> gdecls) fdecls_with_gdecls) in
-  let extfuns = [
-    (Sym.symbol "print_integer", ([I64], Void));
-    (Sym.symbol "read_integer", ([], I64));
-    (Sym.symbol "compare_strings", ([Ll.Ptr array_type; Ll.Ptr array_type], Ll.I64));
-  ] in
-  {
-    tdecls = [(array_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];
-    extgdecls = [];
-    gdecls = global_gdecls;
-    extfuns = extfuns;
-    fdecls = fdecls;
-  }
-*)
-let codegen_prog (tprog: TAst.program) =
+let codegen_prog (tprog : TAst.program) =
   let open Ll in
   let funcs, records =
     match tprog with
     | TAst.Program globals ->
-      List.fold_left
-        (fun (funcs, records) elem ->
-          match elem with
-          | TAst.Function func -> (func :: funcs, records)
-          | TAst.Record record -> (funcs, record :: records))
-        ([], [])
-        globals
+        List.fold_left
+          (fun (funcs, records) elem ->
+            match elem with
+            | TAst.Function func -> (func :: funcs, records)
+            | TAst.Record record -> (funcs, record :: records))
+          ([], []) globals
   in
 
-  let func_results = List.map codegen_func funcs in
-  let fdecls = List.map (fun (gid, fdecl, _) -> (gid, fdecl)) func_results in
+  (* Process records *)
   let record_results = List.map codegen_record records in
-  let global_gdecls =
-    List.flatten (List.map (fun (_, _, gdecls) -> gdecls) func_results) @ record_results
+  let type_decls = List.map fst record_results in
+  let field_indices = List.map snd record_results in
+
+  (* Build str_constants *)
+  let str_constants =
+    List.fold_left
+      (fun acc (record_sym, field_table) ->
+        Sym.Table.add record_sym field_table acc)
+      Sym.Table.empty field_indices
   in
+
+  (* Process functions *)
+  let func_results =
+    List.map (codegen_func str_constants) funcs
+  in
+
+  let fdecls = List.map (fun (gid, fdecl, _) -> (gid, fdecl)) func_results in
+  let global_gdecls =
+    List.flatten (List.map (fun (_, _, gdecls) -> gdecls) func_results)
+  in
+
+  (* Combine all type declarations *)
+  let tdecls = (ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]) :: type_decls in
 
   let extfuns = [
-    (Sym.symbol "print_integer", ([I64], Void));
-    (Sym.symbol "read_integer", ([], I64));
-    (Sym.symbol "compare_strings", ([Ll.Ptr ll_string_type; Ll.Ptr ll_string_type], Ll.I1));
-  ] in
+  (Sym.symbol "print_integer", ([I64], Void));
+  (Sym.symbol "read_integer", ([], I64));
+  (Sym.symbol "compare_strings", ([Ll.Ptr ll_string_type; Ll.Ptr ll_string_type], Ll.I1));
+  (Sym.symbol "allocate_record", ([I32], Ll.Ptr Ll.I8));
+  (Sym.symbol "allocate_array", ([I32; I64; Ll.Ptr Ll.I8], Ll.Ptr Ll.I8));  (* Corrected *)
+] in
+
   {
-    tdecls = [(ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];
+    tdecls = tdecls;
     extgdecls = [];
     gdecls = global_gdecls;
     extfuns = extfuns;
     fdecls = fdecls;
   }
+
 
 
 

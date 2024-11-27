@@ -1,0 +1,24 @@
+(*
+let codegen_prog (tprog: TAst.program) =
+  let open Ll in
+  let func_decls =
+    match tprog with
+    | TAst.Program funcs -> funcs
+  in
+  (* Generate code for each function declaration *)
+  let fdecls_with_gdecls = List.map codegen_func func_decls in
+  let fdecls = List.map (fun (gid, fdecl, _) -> (gid, fdecl)) fdecls_with_gdecls in
+  let global_gdecls = List.flatten (List.map (fun (_, _, gdecls) -> gdecls) fdecls_with_gdecls) in
+  let extfuns = [
+    (Sym.symbol "print_integer", ([I64], Void));
+    (Sym.symbol "read_integer", ([], I64));
+    (Sym.symbol "compare_strings", ([Ll.Ptr array_type; Ll.Ptr array_type], Ll.I64));
+  ] in
+  {
+    tdecls = [(array_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];
+    extgdecls = [];
+    gdecls = global_gdecls;
+    extfuns = extfuns;
+    fdecls = fdecls;
+  }
+*)

@@ -22,3 +22,5 @@ test:
 	./_build/default/main.exe
 #	clang $(OUTPUT_DIR)/test.ll $(OUTPUT_DIR)/main.c -o $(OUTPUT_DIR)/output
 	clang -O2 $(OUTPUT_DIR)/test.ll $(OUTPUT_DIR)/runtime.c $(OUTPUT_DIR)/stdlib.c -o $(OUTPUT_DIR)/output
+	$(OUTPUT_DIR)/output
+	echo $?

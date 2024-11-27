@@ -30,8 +30,8 @@ let compile_prog pathtofile =
   let llvm_prog = Codegen.codegen_prog typedStmt in
   let llvm_ir_string = Ll.string_of_prog llvm_prog in
   print_endline llvm_ir_string;
-  write_to_file "test.ll" llvm_ir_string;
-  exit 0
+  write_to_file "test.ll" llvm_ir_string; 
+  exit 0 
 
 let _ =
   compile_prog "tests/phase5test/test1.dlp";

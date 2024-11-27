@@ -2,9 +2,15 @@
 record qwe { x: int; y : int ; } 
 record T1 { x: int; t2 : int;}
 
+int test () {
+    return 21;
+}
 
 int main () {
-    var m = "hi";
-    var z = m == m;
-    return 2;
+    var y = test();
+    var p = new [int][2];
+    var m = "hii";
+    var s = m == m;
+    var z = new qwe {x = 1; y = 2;};
+    return y;
 }
