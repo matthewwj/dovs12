@@ -415,7 +415,7 @@ let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdec
 
   let cfg = CfgBuilder.get_cfg !(env.cfgb) in
   let fun_name = getNameOfFunc func.fname in
-  let fun_name = if fun_name = "main" then "dolphin_main" else fun_name in
+  let fun_name = if fun_name = "main" then "dolphin_fun_main" else fun_name in
   let fdecl : Ll.fdecl = {
     Ll.fty = (typs, type_op_match func.ret_type);
     Ll.param = names;

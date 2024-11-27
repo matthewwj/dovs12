@@ -8,7 +8,7 @@ declare void @print_integer(i64)
 declare i64 @read_integer()
 declare i1 @compare_strings(%array_type*, %array_type*)
 
-define i64 @dolphin_main () {
+define i64 @dolphin_fun_main () {
  %z6 = alloca %array_type*
  %m2 = alloca %array_type*
  %str_bitcast1 = bitcast { i64, [2 x i8] }* @str0 to %array_type*
