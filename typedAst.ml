@@ -16,7 +16,7 @@ type expr =
 | Integer of {int : int64}
 | Boolean of {bool : bool}
 | String of {str: string}
-| LengthOf of {expr: expr; tp : typ}
+| LengthOf of {expr: expr; tp : typ; tp_expr : typ}
 | BinOp of {left : expr; op : binop; right : expr; tp : typ}
 | UnOp of {op : unop; operand : expr; tp : typ}
 | Lval of lval

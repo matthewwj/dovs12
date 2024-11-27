@@ -18,7 +18,14 @@ let array_type : Ll.ty = Ll.Namedt array_type_name
 
 let array_type_of_length n : Ll.ty = Ll.Struct [Ll.I64; Ll.Array (n, Ll.I8)]
 
+let ll_string_type = Ll.Ptr (Ll.Namedt (Sym.symbol "string_type"))
+let ll_string_type_name = Sym.symbol "string_type"
 
+let ident_to_sym (TAst.Ident { sym }) = sym
+
+let ic32 i = Ll.IConst32 (Int32.of_int i)
+
+type sym_sym_typ = int Sym.Table.t Sym.Table.t
 
 type loops = {
   break_label: Sym.symbol;
@@ -29,7 +36,7 @@ type cg_env =
   { cfgb: CfgBuilder.cfg_builder ref
   ; locals: (Ll.ty * Ll.operand) Sym.Table.t
   ; loop: loops list
-  ; str_constants: (string, Ll.gid) Hashtbl.t
+  ; str_constants: sym_sym_typ (*(string, Ll.gid) Hashtbl.t*)
   ; gdecls: (Ll.gid * Ll.gdecl) list ref }
 
 
@@ -65,14 +72,18 @@ let comparison_op_match (op : TAst.binop) : Ll.cnd =
   | NEq -> Ne
   | _ -> raise Unimplemented
 
-let type_op_match (tp : TAst.typ) : Ll.ty = 
+let rec type_op_match (tp : TAst.typ) : Ll.ty = 
   match tp with 
   | Void -> Void 
   | Int -> Ll.I64
   | Bool -> Ll.I1
   | ErrorType -> raise @@ UnexpectedInput "Not void/int/bool type!"
-  | Str -> Ll.Ptr array_type  (* Use the named type here *)
-  
+  | Str -> ll_string_type  (* Use the named type here *)
+  | Int8 -> Ll.I8 
+  | Struct s -> Ll.Ptr (Ll.Namedt (Sym.symbol s))
+  | Ptr Void -> Ll.Ptr Ll.I8
+  | Ptr e -> Ll.Ptr (type_op_match e)
+  | Array e -> Ll.Ptr (type_op_match e)
 
 
 let type_of_expr (expr : TAst.expr) : Ll.ty =
@@ -96,6 +107,7 @@ let rec codegen_expr env expr =
     emit @@ CfgBuilder.add_insn (Some tmp, inst);
     Ll.Id tmp 
   in
+  let ( >> ) a b = emit_insn_with_fresh a b in
   let cexp = codegen_expr env in
   let rec logic_help left right is_or = 
     let short_circuit_label = fresh_symbol "logic_short_circ" in
@@ -138,7 +150,7 @@ let rec codegen_expr env expr =
     | TAst.Lt | TAst.Le | TAst.Gt | TAst.Ge -> 
       emit_insn_with_fresh "temp_name" @@ Ll.Icmp (comparison_op_match op, Ll.I64, cleft, cright)
     | TAst.Eq | TAst.NEq ->
-        if ltyp = Ll.Ptr array_type && rtyp = Ll.Ptr array_type then
+        if ltyp = ll_string_type && rtyp = ll_string_type then
             (* String equality *)
             let call_inst = Ll.Call (Ll.I1, Ll.Gid (Sym.symbol "compare_strings"), [
             (Ll.Ptr (Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]), cleft);
@@ -200,28 +212,37 @@ let rec codegen_expr env expr =
     | _ ->
         emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
   )
-  | TAst.String {str} ->
-    let gid =
-      try Hashtbl.find env.str_constants str
-      with Not_found ->
-        let gid = fresh_symbol "str" in
-        let str_bytes = str in 
-        let str_len = String.length str_bytes in
-        let ty = array_type_of_length str_len in
-        let gdecl = (ty, Ll.GStruct [
-          (Ll.I64, Ll.GInt (str_len));
-          (Ll.Array (str_len, Ll.I8), Ll.GString str_bytes)
-        ]) in
-        Hashtbl.add env.str_constants str gid;
-        env.gdecls := (gid, gdecl) :: !(env.gdecls);
-        gid
+  | TAst.String { str } ->
+    let size = String.length str in
+    let gSym = fresh_symbol "string_" in
+    let gStruct = fresh_symbol "string_struct_" in
+    let arr = Ll.Array (size, Ll.I8) in
+    let gString = gSym, (arr, Ll.GString str) in
+    let strStruct =
+      ( gStruct
+      , ( Ll.Struct [ I64; Ptr arr ]
+        , Ll.GStruct [ Ll.I64, Ll.GInt size; Ll.Ptr arr, Ll.GGid gSym ] ) )
     in
-    let str_ptr = emit_insn_with_fresh "str_bitcast" @@
-      Ll.Bitcast (Ll.Ptr (array_type_of_length (String.length str)), Ll.Gid gid, Ll.Ptr (array_type))
-    in
-    str_ptr
+    env.gdecls := !(env.gdecls) @ [ gString; strStruct ];
+    "bitcast"
+    >> Ll.Bitcast
+         ( Ll.Ptr (Ll.Struct [ I64; Ll.Ptr (Ll.Array (size, I8)) ])
+         , Ll.Gid gStruct
+         , Ll.Ptr (Ll.Namedt (Symbol.symbol "string_type")) )
   
-  | _ -> raise Unimplemented
+  | TAst.Nil _ -> Null
+
+  | TAst.LengthOf e ->
+    let op = cexp e.expr in
+    (match e.tp_expr with
+     | TAst.Str ->
+       "str_size" >> Ll.Call (Ll.I64, Ll.Gid (Symbol.symbol "string_length"), [ type_op_match e.tp_expr, op ])
+     | TAst.Array _ ->
+       let bitcast = "cast" >> Ll.Bitcast (type_op_match e.tp_expr, op, Ll.Ptr Ll.I64) in
+       "arr_len"
+       >> Ll.Call
+            (Ll.I64, Ll.Gid (Symbol.symbol "dolphin_rc_get_array_length"), [ Ll.Ptr Ll.I64, bitcast ])
+     | _ -> failwith "lengthof not arr or string - doesn't happen")
 
 
 let rec codegen_stmt env stm = 
@@ -234,7 +255,7 @@ let rec codegen_stmt env stm =
       let local_sym = fresh_symbol (Sym.name sym) in
       let ptr = Ll.Id local_sym in
       (*emit @@ CfgBuilder.add_alloca (local_sym, llty);*)
-      emit @@ CfgBuilder.add_alloca (local_sym, Ll.Ptr array_type);
+      emit @@ CfgBuilder.add_alloca (local_sym, ll_string_type);
       let current_locals = env.locals in
       let new_locals = Sym.Table.add sym (llty, ptr) current_locals in
       let new_env = { env with locals = new_locals } in
@@ -399,7 +420,7 @@ let codegen_func (func : TAst.func_decl) : Ll.gid * Ll.fdecl * (Ll.gid * Ll.gdec
     cfgb = ref CfgBuilder.empty_cfg_builder;
     locals = Sym.Table.empty;
     loop = [];
-    str_constants = Hashtbl.create 10;
+    str_constants = Sym.Table.empty;
     gdecls = ref [];
   } in
 
@@ -473,10 +494,10 @@ let codegen_prog (tprog: TAst.program) =
   let extfuns = [
     (Sym.symbol "print_integer", ([I64], Void));
     (Sym.symbol "read_integer", ([], I64));
-    (Sym.symbol "compare_strings", ([Ll.Ptr array_type; Ll.Ptr array_type], Ll.I1));
+    (Sym.symbol "compare_strings", ([Ll.Ptr ll_string_type; Ll.Ptr ll_string_type], Ll.I1));
   ] in
   {
-    tdecls = [(array_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];
+    tdecls = [(ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)])];
     extgdecls = [];
     gdecls = global_gdecls;
     extfuns = extfuns;

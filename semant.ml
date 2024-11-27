@@ -91,7 +91,7 @@ let rec infertype_expr env expr =
     let (expr_typed, expr_type) = infertype_expr env expr in
     (match expr_type with
     | TAst.Str ->
-        (TAst.LengthOf {expr = expr_typed; tp = TAst.Int}, TAst.Int)
+        (TAst.LengthOf {expr = expr_typed; tp = TAst.Int; tp_expr = expr_type}, TAst.Int)
     | _ ->
         raise (Invalid_argument (Errors.error_to_string (Errors.InvalidLengthOf {actual = expr_type; loc = loc}))))
   
