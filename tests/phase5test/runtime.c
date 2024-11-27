@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
+#include "dolphin_rc.h"
 
 struct array {int64_t len; char contents[]; };
 
@@ -14,6 +15,10 @@ struct array *cmd_args = NULL;
 
 struct array *get_cmd_args(){
   return cmd_args;
+}
+
+int64_t string_length (struct array* s) {
+    return s->len;
 }
 
 void *raw_allocate_on_heap(int32_t size){

@@ -8,17 +8,15 @@ module RunTimeBindings = RunTimeBindings
 exception Unimplemented (* your code should eventually compile without this exception *)
 exception UnimpRtrError (* temporary exception for no return error *)
 
+let ident_to_string (Ast.Ident { name; _ }) = name
+
 let rec typecheck_typ env = function
   | Ast.Int _loc -> TAst.Int
   | Ast.Bool _loc -> TAst.Bool
   | Ast.Void _loc -> TAst.Void
   | Ast.Str _loc -> TAst.Str
   | Ast.ArrayType { typ; _ } -> TAst.Array (typecheck_typ env typ)
-  | Ast.Struct { id = Ast.Ident { name; loc }; _ } ->
-      let sym = Symbol.symbol name in
-      (match Env.lookup_record_decl env sym with
-      | Some _ -> TAst.Struct name
-      | None -> raise (Invalid_argument (Errors.error_to_string (Errors.UndeclaredRecord { recordname = name}))))
+  | Ast.Struct { id; _ } -> TAst.Struct (ident_to_string id)
   | _ -> raise Unimplemented
 
 
@@ -75,7 +73,7 @@ let rec safe_zip l1 l2 =
 let rec infertype_expr env expr =
   match expr with
   
-  | Ast.Nil { loc } ->
+  | Ast.Nil _ ->
     (TAst.Nil { typ = TAst.NilType }, TAst.NilType)
 
 
@@ -130,16 +128,16 @@ let rec infertype_expr env expr =
     in
     (TAst.UnOp {op = optyp; operand = operand_expr; tp = operand_type}, operand_type)
   | Ast.Lval lvl -> infertype_lval env lvl
-  | Ast.Assignment {lvl; rhs; loc} ->
-    let _, lvalType = infertype_lval env lvl in
-    let rhsExpr = typecheck_expr env rhs lvalType loc in
-    let lvlType : TAst.lval =
-      match lvl with
-      | Ast.Var (Ident {name; _}) ->
-        TAst.Var {ident = TAst.Ident {sym = Symbol.symbol name}; tp = lvalType}
+  | Ast.Assignment { lvl; rhs; loc } ->
+    let tLval, tLvalTp = infertype_lval env lvl in
+    let tRhsExp = typecheck_expr env rhs tLvalTp loc in
+    let tLvl : TAst.lval =
+      match tLval with
+      | TAst.Lval e -> e
+      | _ -> failwith "doesn't happen not lval"
     in
-    (TAst.Assignment {lvl = lvlType; rhs = rhsExpr; tp = lvalType}, lvalType)
-  | Ast.CommaExpr {lhs; rhs; loc} -> 
+    TAst.Assignment { lvl = tLvl; rhs = tRhsExp; tp = tLvalTp }, tLvalTp
+  | Ast.CommaExpr {lhs; rhs; _} -> 
     let leftExp, _ = infertype_expr env lhs in 
     let rightExp, rightTyp = infertype_expr env rhs in
     (TAst.CommaExpr {lhs = leftExp; rhs = rightExp; tp = rightTyp}, rightTyp)
@@ -189,16 +187,10 @@ let rec infertype_expr env expr =
                    raise (Invalid_argument (Errors.error_to_string (Errors.UndeclaredRecord { recordname = struct_name }))))
           | _ ->
               raise (Invalid_argument (Errors.error_to_string (Errors.UnknownField {loc = loc }))))
-       | Ast.Array { size } -> 
-           let typed_size = typecheck_expr env size TAst.Int loc in
-           (match t_typ with
-            | TAst.Array element_type ->
-                (TAst.NewExpr { tp = t_typ; obj = TAst.Array { size = typed_size } }, t_typ)
-            | _ ->
-                raise (Invalid_argument (Errors.error_to_string (Errors.UnknownField {loc = loc }))))
-      )
-    | _ ->
-      raise Unimplemented
+          | Array a ->
+            let tSize = typecheck_expr env a.size TAst.Int loc in
+            let obj = TAst.Array { size = tSize } in
+            TAst.NewExpr { tp = t_typ; obj}, TAst.Array t_typ)
 
 and infertype_lval env lvl =
   match lvl with

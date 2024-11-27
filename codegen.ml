@@ -99,25 +99,28 @@ let without_ptr e =
   | Ll.Ptr a -> a
   | _ -> failwith "not a pointer"
 
-let type_of_expr (expr : TAst.expr) : Ll.ty =
+let rec type_of_expr (expr : TAst.expr) : Ll.ty =
   match expr with
-  | Integer _ -> I64
-  | Boolean _ -> I1
+  | Integer _ -> Ll.I64
+  | Boolean _ -> Ll.I1
   | BinOp { tp; _ } -> type_op_match tp
   | UnOp { tp; _ } -> type_op_match tp
-  | Lval e ->
-    type_op_match
-      (match e with
-       | Var { tp; _ } -> tp
-       | Idx { tp; _ } -> tp
-       | Fld { tp; _ } -> tp)
-  | Assignment _ -> Void
+  | Lval (Idx { arr; tp; _ }) ->
+      (* Get the element type for the array *)
+      (match type_of_expr arr with
+       | Ll.Ptr (Ll.Array (_, elem_ty)) -> elem_ty
+       | Ll.Ptr elem_ty -> elem_ty
+       | other -> raise @@ UnexpectedInput ("Invalid array type: " ^ Ll.string_of_ty other))
+  | Lval (Var { tp; _ }) -> type_op_match tp
+  | Lval (Fld { tp; _ }) -> type_op_match tp
+  | Assignment _ -> Ll.Void
   | Call { tp; _ } -> type_op_match tp
   | CommaExpr { tp; _ } -> type_op_match tp
   | NewExpr { tp; _ } -> type_op_match tp
   | String _ -> ll_string_type
-  | LengthOf _ -> I64
+  | LengthOf _ -> Ll.I64
   | Nil { typ } -> type_op_match typ
+
 
 
 (* Codegen for expressions *)
@@ -142,15 +145,23 @@ let rec codegen_expr env expr =
     | TAst.Idx { arr; index; tp } -> (
         let arr_op = codegen_expr env arr in
         let index_op = codegen_expr env index in
-        let arr_ty = type_of_expr arr in
-        let elem_ty = type_op_match tp in
-        (* Adjust GEP indices for array representation *)
-        let ptr =
-          emit_insn_with_fresh "gep_idx"
-          @@ Ll.Gep (arr_ty, arr_op, [ Ll.IConst32 0l; Ll.IConst32 1l; index_op ])
-        in
-        (elem_ty, ptr)
-      )
+        match type_of_expr arr with
+        | Ll.Ptr (Ll.Array (n, elem_ty)) ->
+            (* Statically sized array *)
+            let ptr =
+              emit_insn_with_fresh "gep_idx"
+              @@ Ll.Gep (Ll.Array (n, elem_ty), arr_op, [ Ll.IConst32 0l; index_op ])
+            in
+            (elem_ty, ptr)
+        | Ll.Ptr elem_ty ->
+            (* Dynamically allocated array *)
+            let ptr =
+              emit_insn_with_fresh "gep_idx"
+              @@ Ll.Gep (Ll.Ptr elem_ty, arr_op, [ index_op ])
+            in
+            (elem_ty, ptr)
+        | other -> raise @@ UnexpectedInput ("Invalid array type: " ^ Ll.string_of_ty other)
+      )    
     | TAst.Fld { rcrd; field = Ident { sym = field_sym }; tp; rcrd_tp } -> (
         let rcrd_op = codegen_expr env rcrd in
         let rcrd_ty = type_of_expr rcrd in
@@ -171,9 +182,7 @@ let rec codegen_expr env expr =
         in
         (elem_ty, ptr)
       )
-  
   in
-
   let rec logic_help left right is_or = 
     let short_circuit_label = fresh_symbol "logic_short_circ" in
     let cond_label = fresh_symbol "logic_next" in
@@ -317,33 +326,32 @@ let rec codegen_expr env expr =
            fields
        in
        bitcast
-     | TAst.Array { size } ->
-       let size_ptr = "size_ptr" >> Gep (typ, Null, [ IConst64 1L ]) in
-       let size_elem = "size" >> Ptrtoint (typ, size_ptr, I32) in
-       let size = codegen_expr env size in
-       let def_val =
-         match tp with
-         | TAst.Str -> Gid (Symbol.symbol "dolphin_rc_empty_string")
-         | TAst.Struct _ | TAst.Ptr _ | TAst.Array _ -> Null
-         | _ -> Ll.IConst64 0L
-       in
-       let default_value = "default_val_" >> Ll.Alloca typ in
-       let _ =
-         emit @@ CfgBuilder.add_insn (None, Ll.Store (typ, def_val, default_value))
-       in
-       let bitcast_default_value =
-         "bitcast" >> Ll.Bitcast (Ptr typ, default_value, Ptr I8)
-       in
-       let alloc =
-         "malloc_ptr"
-         >> Call
-              ( Ptr I8
-              , Gid (Symbol.symbol "allocate_array")
-              , [ I32, size_elem; I64, size; Ptr I8, bitcast_default_value ] )
-       in
-       let bitcast = "bitcast" >> Ll.Bitcast (Ptr I8, alloc, typ) in
-       bitcast)
-
+       | TAst.Array { size } ->
+        let size_ptr = "size_ptr" >> Gep (typ, Null, [ IConst64 1L ]) in
+        let size_elem = "size" >> Ptrtoint (typ, size_ptr, I32) in
+        let size = codegen_expr env size in
+        let def_val =
+          match tp with
+          | TAst.Str -> Gid (Sym.symbol "dolphin_rc_empty_string")
+          | TAst.Struct _ | TAst.Ptr _ | TAst.Array _ -> Null
+          | _ -> Ll.IConst64 0L
+        in
+        let default_value = "default_val_" >> Ll.Alloca typ in
+        let _ =
+          emit @@ CfgBuilder.add_insn (None, Ll.Store (typ, def_val, default_value))
+        in
+        let bitcast_default_value =
+          "bitcast" >> Ll.Bitcast (Ptr typ, default_value, Ptr I8)
+        in
+        let alloc =
+          "malloc_ptr"
+          >> Call
+               ( Ptr I8
+               , Gid (Sym.symbol "allocate_array")
+               , [ I32, size_elem; I64, size; Ptr I8, bitcast_default_value ] )
+        in
+        let bitcast = "bitcast" >> Ll.Bitcast (Ptr I8, alloc, Ptr typ) in
+        bitcast)     
   | TAst.LengthOf e ->
     let op = cexp e.expr in
     (match e.tp_expr with
@@ -356,7 +364,6 @@ let rec codegen_expr env expr =
             (Ll.I64, Ll.Gid (Symbol.symbol "dolphin_rc_get_array_length"), [ Ll.Ptr Ll.I64, bitcast ])
      | _ -> failwith "lengthof not arr or string - doesn't happen")
 
-  | _ -> raise Unimplemented
 
 
 let rec codegen_stmt env stm = 
@@ -447,7 +454,7 @@ let rec codegen_stmt env stm =
     emit @@ CfgBuilder.start_block body_block;
     let new_env = {env with loop = { break_label; continue_label } :: env.loop} in
 
-    let a = codegen_stmt new_env body in
+    let _ = codegen_stmt new_env body in
     emit @@ CfgBuilder.term_block (Ll.Br continue_label);
     emit @@ CfgBuilder.start_block break_label;
     env
@@ -608,14 +615,15 @@ let codegen_prog (tprog : TAst.program) =
   let extfuns = [
   (Sym.symbol "print_integer", ([I64], Void));
   (Sym.symbol "read_integer", ([], I64));
-  (Sym.symbol "compare_strings", ([Ll.Ptr ll_string_type; Ll.Ptr ll_string_type], Ll.I1));
+  (Sym.symbol "compare_strings", ([ll_string_type; ll_string_type], Ll.I1));
   (Sym.symbol "allocate_record", ([I32], Ll.Ptr Ll.I8));
-  (Sym.symbol "allocate_array", ([I32; I64; Ll.Ptr Ll.I8], Ll.Ptr Ll.I8));  (* Corrected *)
-] in
+  (Sym.symbol "allocate_array", ([I32; I64; Ll.Ptr Ll.I8], Ll.Ptr Ll.I8));
+  (Sym.symbol "string_length", ([Ll.Ptr ll_string_type], Ll.I64)); 
+  ] in
 
   {
     tdecls = tdecls;
-    extgdecls = [];
+    extgdecls = [Sym.symbol "dolphin_rc_empty_string", Ll.Namedt( Sym.symbol "string_type")];
     gdecls = global_gdecls;
     extfuns = extfuns;
     fdecls = fdecls;

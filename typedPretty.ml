@@ -2,12 +2,18 @@ module Sym = Symbol
 module PBox = PrintBox
 open TypedAst
 
-let typ_to_string = function
+let rec typ_to_string = function
 | Void -> "void"
 | Int -> "int"
 | Bool -> "bool"
 | ErrorType -> "'type error'"
+| Struct name -> "struct: " ^ name
 | Str -> "string"
+| Array tp -> typ_to_string tp ^ "[]"
+| Ptr tp -> typ_to_string tp ^ "*"
+| NilType -> "nil"
+| Int32 -> "int32"
+| Int8 -> "int8"
 
 (* producing trees for pretty printing *)
 let ident_to_tree (Ident {sym}) = Pretty.make_ident_line (Sym.name sym)
@@ -18,7 +24,13 @@ let typ_to_tree tp =
   | Int -> Pretty.make_typ_line "Int"
   | Bool -> Pretty.make_typ_line "Bool"
   | ErrorType -> PBox.line_with_style (PBox.Style.set_bg_color PBox.Style.Red PBox.Style.default) "ErrorType"
-
+  | Struct name -> Pretty.make_typ_line name
+  | Str -> Pretty.make_typ_line "String"
+  | Array tp -> Pretty.make_typ_line (typ_to_string tp ^ "[]")
+  | Ptr tp -> Pretty.make_typ_line (typ_to_string tp ^ "*")
+  | Int32 -> Pretty.make_typ_line (typ_to_string tp ^ "int32")
+  | Int8 -> Pretty.make_typ_line (typ_to_string tp ^ "int8")
+  | NilType -> Pretty.make_typ_line (typ_to_string tp ^ " Nill")
 
 let binop_to_tree op =
   match op with
@@ -54,9 +66,34 @@ let rec expr_to_tree e =
       [typ_to_tree tp; 
       PBox.hlist ~bars:false [Pretty.make_info_node_line "FunName: "; ident_to_tree fname];
         PBox.tree (Pretty.make_info_node_line "Args") (List.map (fun e -> expr_to_tree e) args)]
+        | CommaExpr { lhs; rhs; tp } ->
+          let rec flatten_comma expr acc =
+            match expr with
+            | CommaExpr { lhs; rhs; _ } -> flatten_comma lhs (flatten_comma rhs acc)
+            | _ -> expr :: acc
+          in
+          let exprs = flatten_comma lhs (flatten_comma rhs []) in
+          PBox.tree
+            (Pretty.make_info_node_line "CommaExpr")
+            ([ typ_to_tree tp ] @ List.map expr_to_tree exprs)
+  | String { str } ->
+    PBox.tree
+      (Pretty.make_info_node_line "String")
+      [Pretty.make_info_node_line ("Value: " ^ str)]
+  | NewExpr e -> PBox.tree (Pretty.make_info_node_line "NewExpr") [ typ_to_tree e.tp ]
+  | Nil e -> PBox.tree (Pretty.make_info_node_line "Nil") [ typ_to_tree e.typ ]
+  | LengthOf e ->
+    PBox.tree
+      (Pretty.make_info_node_line "length_of")
+      [ typ_to_tree e.tp; typ_to_tree e.tp_expr; expr_to_tree e.expr ]
 and lval_to_tree l =
   match l with
   | Var {ident; tp} -> PBox.hlist ~bars:false [Pretty.make_info_node_line "Var("; ident_to_tree ident; Pretty.make_info_node_line ")"; PBox.line " : "; typ_to_tree tp;]
+  | Idx e ->
+    PBox.tree
+      (Pretty.make_info_node_line ("array lookup: " ^ typ_to_string e.tp))
+      [ expr_to_tree e.arr; expr_to_tree e.index ]
+  | Fld _ -> PBox.hlist ~bars:false [ Pretty.make_info_node_line "record_lookup(" ]
 
 let single_declaration_to_tree (Declaration {name; tp; body; _}) =
   PBox.tree (Pretty.make_keyword_line "Declaration") 

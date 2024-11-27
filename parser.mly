@@ -143,6 +143,7 @@ exp:
 | LPAREN le = exp COMMA re = exp RPAREN {CommaExpr {lhs = le; rhs = re; loc = l $loc}} *)
 | LPAREN e = commaexprcontainer RPAREN {e}
 | s = STRING_LIT { String {str = s; loc = l $loc}}
+| LENGTHOF LPAREN a = exp RPAREN {LengthOf {expr = a; loc = l $loc}}
 | NEW a = new_expr {a}
 | NIL {Nil {loc = l $loc}}
 | i = lval ASSIGN rhs = exp
