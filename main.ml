@@ -34,5 +34,5 @@ let compile_prog pathtofile =
   exit 0 
 
 let _ =
-  compile_prog "tests/phase5test/test2.dlp";
+  compile_prog "tests/phase5test/test10.dlp";
   

@@ -1,0 +1,5 @@
+int main() {
+    var a = "\065\098\099"; 
+    output_string(a, get_stdout());
+    return length_of(a);
+}

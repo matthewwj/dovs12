@@ -1,0 +1,5 @@
+int main () {
+    var a ="this should be the first three letters of the alphabet: abf\bc";
+    output_string(a, get_stdout());
+    return 0;
+}

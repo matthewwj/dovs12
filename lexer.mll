@@ -12,8 +12,7 @@ let ascii_digits = ['2'] ['0'-'4'] ['0'-'9'] | ['0'-'1'] digit digit | ['2'] ['5
 let letter = ['a'-'z'] | '_' | ['A' - 'Z']
 let ident = letter (letter | digit)*
 let non_escaped_char = [^ '\\' '"'] 
-let escape_sequence = 
-  '\\' [ '"' 'n' 't' 'r' 'b' 'f' ]
+let escape_sequence = '\\' ['\\' '"' 'n' 't' 'r' 'b' 'f' '\'' '0']
 let string_char = non_escaped_char | escape_sequence
 
 let string_lit = '"' (string_char)* '"'
@@ -94,15 +93,26 @@ and comment nestingLevel line_com = parse
   | _   { comment nestingLevel line_com lexbuf }
 
 and strings sBuf = parse
-| '"' { STRING_LIT (Buffer.contents sBuf) }
-| "\\" (ascii_digits as e) {Buffer.add_char sBuf ((Char.chr (int_of_string e))); strings sBuf lexbuf} 
-| "\\n" {Buffer.add_char sBuf '\n'; strings sBuf lexbuf}                                              
-| "\\t" {Buffer.add_char sBuf '\t'; strings sBuf lexbuf}       
-| "\\b" {Buffer.add_char sBuf '\b'; strings sBuf lexbuf}        
-| "\\r" {Buffer.add_char sBuf '\r'; strings sBuf lexbuf}                                   
-| "\\" ('"' as e) {Buffer.add_char sBuf e; strings sBuf lexbuf}
-| "\\" ("\\" as e) {Buffer.add_char sBuf e; strings sBuf lexbuf}
-| "\\" ("'" as e) {Buffer.add_char sBuf e; strings sBuf lexbuf}
+| '"' { 
+    let buf = Buffer.create 16 in
+    strings buf lexbuf 
+  }
+| "\\" ['\\' '"' 'n' 't' 'r' 'b' 'f' '\'' '0'] as e { 
+    Buffer.add_char sBuf (match e with
+      | "\\" -> '\\'
+      | "\"" -> '\"'
+      | "n" -> '\n'
+      | "t" -> '\t'
+      | "r" -> '\r'
+      | "b" -> '\b'
+      | "f" -> '\012'
+      | "'" -> '\''
+      | "0" -> '\000'
+      | _ -> failwith "Unhandled escape sequence"
+    ); 
+    strings sBuf lexbuf
+  }
+| non_escaped_char as e { Buffer.add_char sBuf e; strings sBuf lexbuf }
 | eof { failwith "String not closed" }
-| _ as e {Buffer.add_char sBuf e; strings sBuf lexbuf }
+
 

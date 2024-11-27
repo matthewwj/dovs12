@@ -1,9 +1,11 @@
 %string_type = type { i64, [0 x i8] }
 %dolphin_record_stream = type {  }
+%T1 = type { i64, i64 }
+%qwe = type { i64, i64 }
 
 @dolphin_rc_empty_string = external global %string_type
 
-@string_literal0 = global { i64, [12 x i8] } {i64 12, [12 x i8] c"Hello World!"}
+@string_literal16 = global { i64, [3 x i8] } {i64 3, [3 x i8] c"hii"}
 
 declare i64 @compare_strings(%string_type*, %string_type*)
 declare i8* @allocate_record(i32)
@@ -47,8 +49,48 @@ declare %string_type** @get_cmd_args()
 declare void @exit(i64)
 
 define i64 @dolphin_fun_main () {
- %bitcast_string_literal1 = bitcast { i64, [12 x i8] }* @string_literal0 to %string_type**
- %call2 = call %dolphin_record_stream* @get_stdout ()
- call void @output_string (%string_type* %bitcast_string_literal1, %dolphin_record_stream* %call2)
- ret i64 0
+ %z25 = alloca %qwe*
+ %m18 = alloca %string_type*
+ %a15 = alloca %string_type**
+ %p8 = alloca i64*
+ %y1 = alloca i64
+ %call0 = call i64 @test ()
+ store i64 %call0, i64* %y1
+ %size_ptr2 = getelementptr i64, i64* null, i64 1
+ %size3 = ptrtoint i64* %size_ptr2 to i32
+ %default_val_4 = alloca i64
+ store i64 0, i64* %default_val_4
+ %bitcast5 = bitcast i64* %default_val_4 to i8*
+ %malloc_ptr6 = call i8* @allocate_array (i32 %size3, i64 2, i8* %bitcast5)
+ %bitcast7 = bitcast i8* %malloc_ptr6 to i64*
+ store i64* %bitcast7, i64** %p8
+ %size_ptr9 = getelementptr %string_type*, %string_type** null, i64 1
+ %size10 = ptrtoint %string_type** %size_ptr9 to i32
+ %default_val_11 = alloca %string_type*
+ store %string_type* @dolphin_rc_empty_string, %string_type** %default_val_11
+ %bitcast12 = bitcast %string_type** %default_val_11 to i8*
+ %malloc_ptr13 = call i8* @allocate_array (i32 %size10, i64 3, i8* %bitcast12)
+ %bitcast14 = bitcast i8* %malloc_ptr13 to %string_type**
+ store %string_type** %bitcast14, %string_type*** %a15
+ %bitcast_string_literal17 = bitcast { i64, [3 x i8] }* @string_literal16 to %string_type**
+ store %string_type* %bitcast_string_literal17, %string_type** %m18
+ %size_ptr19 = getelementptr %qwe, %qwe* null, i32 1
+ %size20 = ptrtoint %qwe* %size_ptr19 to i32
+ %malloc_ptr21 = call i8* @allocate_record (i32 %size20)
+ %qwe_ptr22 = bitcast i8* %malloc_ptr21 to %qwe*
+ %gep23 = getelementptr %qwe, %qwe* %qwe_ptr22, i32 0, i32 0
+ store i64 1, i64* %gep23
+ %gep24 = getelementptr %qwe, %qwe* %qwe_ptr22, i32 0, i32 1
+ store i64 2, i64* %gep24
+ store %qwe* %qwe_ptr22, %qwe** %z25
+ %load26 = load %string_type**, %string_type*** %a15
+ %gep_idx27 = getelementptr %string_type**, %string_type*** %load26, i64 1
+ %load28 = load %string_type*, %string_type** %gep_idx27
+ %str_size29 = call i64 @string_length (%string_type* %load28)
+ ret i64 %str_size29
+}
+
+define i64 @test () {
+ %call30 = call i64 @read_integer ()
+ ret i64 %call30
 }

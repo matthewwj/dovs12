@@ -1,0 +1,5 @@
+int main () {
+    var a ="here should be \t a big space";
+    output_string(a, get_stdout());
+    return 0;
+}

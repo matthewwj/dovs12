@@ -1,0 +1,5 @@
+int main(){
+    var a  = "he\nllo\rworld";
+    output_string(a, get_stdout());
+    return 0;
+}

@@ -1,0 +1,4 @@
+int main () {
+    var a ="\\\\";
+    return length_of(a);
+}
