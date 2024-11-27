@@ -21,6 +21,17 @@ int64_t string_length (struct array* s) {
     return s->len;
 }
 
+int64_t read_integer () {
+    int64_t value;
+    printf("Please enter an integer: ");
+    scanf("%" PRId64 "" , &value);
+    return value;
+}
+
+void print_integer (int64_t value) {
+    printf("%" PRId64 "\n" , value);
+}
+
 void *raw_allocate_on_heap(int32_t size){
     if(size < 0){
         fprintf(stderr, "Internal error: allocation of element negative size!\n");

@@ -504,15 +504,6 @@ let add_functions_and_records env (func_rec_decl: Ast.global_elements) =
     let typed_return_type = typecheck_typ env ret_type in
     Env.insert_local_func_decl new_env (Symbol.symbol string_name) (TAst.FunTyp {ret = typed_return_type; params = typed_args})
 
-  (*| Ast.Record {name; fields; loc;} -> 
-    let rec_string_name = match name with | Ast.Ident {name; _} -> name in
-    let new_env = match Env.lookup_var_fun env (Symbol.symbol rec_string_name) with
-      | None -> env
-      | Some (Var _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = rec_string_name; loc})));
-      | Some (Fun _) -> raise (Invalid_argument (Errors.error_to_string (Errors.DuplicateName {name = rec_string_name; loc})));
-    in
-    let typed_fields = List.map(typecheck_func_params new_env) fields in
-    Env.insert_record_decl new_env (Symbol.symbol rec_string_name) (TAst.r {}) *)
 
 | Ast.Record r_decl ->
   let typed_r_decl = typecheck_record_decl env r_decl in
@@ -520,30 +511,9 @@ let add_functions_and_records env (func_rec_decl: Ast.global_elements) =
   (* Insert the typed record declaration into the environment *)
   Env.insert_record_decl env sym typed_r_decl
 
-(*
-(* should check that the program (sequence of statements) ends in a return statement and make sure that all statements are valid as described in the assignment. Should use typecheck_statement_seq. *)
-let typecheck_prog (prg: Ast.program)  =
-  let env = Env.make_env RunTimeBindings.library_functions in
-  match prg with
-  | Ast.Program func_or_records ->
-    let env_func_rec = List.fold_left add_functions_and_records env func_or_records in
-    (* Check for main function *)
-    (match List.rev func_or_records with
-    | Ast.Function {ret_type; fname; _} :: _ ->
-      let main = Symbol.symbol "main" in
-      (match Env.lookup_var_fun env_func_rec main with
-      | Some (Fun FunTyp{ret; _}) -> (match ret with | Int -> () | _ -> raise (Invalid_argument (Errors.error_to_string (Errors.NoMainFunction)));)
-      | _ ->  raise (Invalid_argument (Errors.error_to_string (Errors.NoMainFunction)));)
-    | _ ->  raise (Invalid_argument (Errors.error_to_string (Errors.NoMainFunction))););
-
-  let typed_function_decls = List.map (typecheck_function_decl env_func_rec) func_or_records in
-  (TAst.Program typed_function_decls, env_func_rec)
-  *)
-
-
 
 let typecheck_prog (prg: Ast.program)  =
-  let env = Env.make_env RunTimeBindings.library_functions in
+  let env = Env.make_env RunTimeBindings.library_functions RunTimeBindings.user_inaccessible_functions in
   match prg with
   | Ast.Program func_or_records ->
       let env_func_rec = List.fold_left add_functions_and_records env func_or_records in
@@ -563,12 +533,3 @@ let typecheck_prog (prg: Ast.program)  =
         ) func_or_records
       in
       (TAst.Program typed_global_elements, env_func_rec)
-
- (* begin
-    match List.rev prg.funcs with
-    | Ast.ReturnStm _ :: _ -> ()
-    | _ -> raise (Invalid_argument (Errors.error_to_string Errors.NotEndInRet))
-  end;
-  let tProg, env_res = typecheck_statement_seq env prg in
-  tProg, !(env_res.errors)
-*)

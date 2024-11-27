@@ -10,19 +10,29 @@ type varOrFun =
 
 type environment = {
   vars_and_funs : varOrFun Sym.Table.t;
+  internal_funs : (Ll.ty * Ll.ty list) Sym.Table.t;
   record_decls : TAst.record_decl Sym.Table.t;
   errors : Errors.error list ref;
   loop : int;
-  
 }
 
 (* Create an initial environment with the given functions defined *)
-let make_env function_types =
-  let emp = Sym.Table.empty in
-  let env = 
-    List.fold_left (fun env (fsym, ftp) -> Sym.Table.add fsym (Fun ftp) env) emp function_types
+let make_env library_function_types internal_function_types =
+  let vars_and_funs_table = Sym.Table.empty in
+  let vars_and_funs_table = 
+    List.fold_left (fun tbl (fsym, ftp) -> Sym.Table.add fsym (Fun ftp) tbl) vars_and_funs_table library_function_types
   in 
-  { vars_and_funs = env; errors = ref []; record_decls = Sym.Table.empty; loop = 0 }
+  let internal_funs_table = Sym.Table.empty in
+  let internal_funs_table =
+    List.fold_left (fun tbl (fsym, ret_ty, arg_tys) -> Sym.Table.add fsym (ret_ty, arg_tys) tbl) internal_funs_table internal_function_types
+  in
+  { 
+    vars_and_funs = vars_and_funs_table; 
+    internal_funs = internal_funs_table;  (* Initialize internal functions *)
+    record_decls = Sym.Table.empty; 
+    errors = ref []; 
+    loop = 0 
+  }
 
 (* Insert a local declaration into the environment *)
 let insert_local_decl env sym typ =
@@ -44,3 +54,7 @@ let insert_record_decl env sym record_decl =
 (* Lookup a record declaration in the environment *)
 let lookup_record_decl env sym =
   Sym.Table.find_opt sym env.record_decls
+
+(* Lookup internal functions *)
+let lookup_internal_func env sym =
+  Sym.Table.find_opt sym env.internal_funs

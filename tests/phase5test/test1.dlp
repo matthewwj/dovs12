@@ -3,7 +3,7 @@ record qwe { x: int; y : int ; }
 record T1 { x: int; t2 : int;}
 
 int test () {
-    return 21;
+    return read_integer();
 }
 
 int main () {

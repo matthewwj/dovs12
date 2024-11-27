@@ -573,7 +573,17 @@ and codegen_func str_constants (func : TAst.func_decl) :
   (Sym.symbol fun_name, fdecl, !(env.gdecls))
 
 
-let codegen_prog (tprog : TAst.program) =
+(* Helper function to extract runtime functions from the environment *)
+let extract_runtime_functions (env : Env.environment) : (Sym.symbol * TAst.funtype) list =
+  RunTimeBindings.library_functions
+  |> List.map fst  (* Extract symbols from library_functions *)
+  |> List.filter_map (fun sym ->
+      match Env.lookup_var_fun env sym with
+      | Some (Env.Fun fun_typ) -> Some (sym, fun_typ)
+      | _ -> None
+    ) 
+
+let codegen_prog (tprog : TAst.program) env =
   let open Ll in
   let funcs, records =
     match tprog with
@@ -609,17 +619,36 @@ let codegen_prog (tprog : TAst.program) =
     List.flatten (List.map (fun (_, _, gdecls) -> gdecls) func_results)
   in
 
-  (* Combine all type declarations *)
-  let tdecls = (ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]) :: type_decls in
+  (* 6. Extract runtime functions from the environment *)
+  let runtime_funcs = extract_runtime_functions env in 
 
+let tdecls = (ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]) ::
+  (Sym.symbol "dolphin_record_stream", Ll.Struct []) :: type_decls in
+  
+  (* 7. Convert runtime functions to Ll.ExternalFunction *)
+  let extfuns1 = 
+    List.map (fun (sym, fun_typ) ->
+      match fun_typ with
+      | TAst.FunTyp { ret; params } ->
+          let ret_ty = type_op_match ret in
+          let param_tys = List.map (fun (TAst.Param { typ; _ }) -> type_op_match typ) params in
+          (sym, (param_tys, ret_ty))
+      | _ ->
+          failwith "Expected FunTyp for runtime function"
+    ) runtime_funcs
+  in
+  
   let extfuns = [
-  (Sym.symbol "print_integer", ([I64], Void));
-  (Sym.symbol "read_integer", ([], I64));
-  (Sym.symbol "compare_strings", ([ll_string_type; ll_string_type], Ll.I1));
-  (Sym.symbol "allocate_record", ([I32], Ll.Ptr Ll.I8));
-  (Sym.symbol "allocate_array", ([I32; I64; Ll.Ptr Ll.I8], Ll.Ptr Ll.I8));
-  (Sym.symbol "string_length", ([Ll.Ptr ll_string_type], Ll.I64)); 
-  ] in
+  (Sym.symbol "compare_strings", ([Ll.Ptr ll_string_type; Ll.Ptr ll_string_type], Ll.I64));
+  (Sym.symbol "allocate_record", ([Ll.I32], Ll.Ptr Ll.I8));
+  (Sym.symbol "raw_allocate_on_heap", ([Ll.I32], Ll.Ptr Ll.I8));
+  (Sym.symbol "allocate_array", ([Ll.I32; Ll.I64; Ll.Ptr Ll.I8], Ll.Ptr Ll.I8));
+  (Sym.symbol "report_error_array_index_out_of_bounds", ([], Ll.Void));
+  (Sym.symbol "report_error_nil_access", ([], Ll.Void));
+  (Sym.symbol "report_error_division_by_zero", ([], Ll.Void));
+  (Sym.symbol "string_length", ([Ll.Ptr ll_string_type], Ll.I64));
+] @ extfuns1 in
+
 
   {
     tdecls = tdecls;
