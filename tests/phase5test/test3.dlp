@@ -1,0 +1,4 @@
+int main () {
+  output_string ("Hello World!", get_stdout());
+  return 0;
+}

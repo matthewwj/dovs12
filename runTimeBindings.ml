@@ -112,8 +112,8 @@ let library_functions =
     (Sym.symbol "output_string", TAst.FunTyp {
       ret = Void;
       params = [
-        TAst.Param { paramname = make_ident "string"; typ = TAst.Ptr TAst.Int8 };
-        TAst.Param { paramname = make_ident "stream"; typ = Ptr (Struct "dolphin_record_stream") }
+        TAst.Param { paramname = make_ident "string"; typ = TAst.Str };
+        TAst.Param { paramname = make_ident "stream"; typ = (Struct "dolphin_record_stream") }
       ]
     });
     (Sym.symbol "seek_in_file", TAst.FunTyp {
@@ -164,7 +164,7 @@ let library_functions =
       params = []
     });
     (Sym.symbol "get_stdout", TAst.FunTyp {
-      ret = Ptr (Struct "dolphin_record_stream");
+      ret = (Struct "dolphin_record_stream");
       params = []
     });
     (Sym.symbol "get_cmd_args", TAst.FunTyp {

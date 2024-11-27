@@ -281,23 +281,21 @@ let rec codegen_expr env expr =
         emit_insn_with_fresh "call" @@ Ll.Call (llty, Ll.Gid sym, carglist)
   )
   | TAst.String { str } ->
-    let size = String.length str in
-    let gSym = fresh_symbol "string_" in
-    let gStruct = fresh_symbol "string_struct_" in
-    let arr = Ll.Array (size, Ll.I8) in
-    let gString = gSym, (arr, Ll.GString str) in
-    let strStruct =
-      ( gStruct
-      , ( Ll.Struct [ I64; Ptr arr ]
-        , Ll.GStruct [ Ll.I64, Ll.GInt size; Ll.Ptr arr, Ll.GGid gSym ] ) )
+    let str_len = String.length str in
+    let gSym = fresh_symbol "string_literal" in
+    let arr = Ll.Array (str_len, Ll.I8) in
+    let gString =
+      ( gSym,
+        (Ll.Struct [Ll.I64; arr],
+        Ll.GStruct [Ll.I64, Ll.GInt str_len; arr, Ll.GString str]) )
     in
-    env.gdecls := !(env.gdecls) @ [ gString; strStruct ];
-    "bitcast"
-    >> Ll.Bitcast
-         ( Ll.Ptr (Ll.Struct [ I64; Ll.Ptr (Ll.Array (size, I8)) ])
-         , Ll.Gid gStruct
-         , Ll.Ptr (Ll.Namedt (Symbol.symbol "string_type")) )
-  
+    env.gdecls := !(env.gdecls) @ [gString];
+    (* Cast the global string literal into %array_type* *)
+    let bitcast =
+      emit_insn_with_fresh "bitcast_string_literal"
+      @@ Ll.Bitcast (Ll.Ptr (Ll.Struct [Ll.I64; arr]), Ll.Gid gSym, Ll.Ptr ll_string_type)
+    in
+    bitcast  
   | TAst.Nil _ -> Null
 
   | TAst.NewExpr { tp; obj } ->
@@ -639,14 +637,14 @@ let tdecls = (ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]) ::
   in
   
   let extfuns = [
-  (Sym.symbol "compare_strings", ([Ll.Ptr ll_string_type; Ll.Ptr ll_string_type], Ll.I64));
+  (Sym.symbol "compare_strings", ([ ll_string_type; ll_string_type], Ll.I64));
   (Sym.symbol "allocate_record", ([Ll.I32], Ll.Ptr Ll.I8));
   (Sym.symbol "raw_allocate_on_heap", ([Ll.I32], Ll.Ptr Ll.I8));
   (Sym.symbol "allocate_array", ([Ll.I32; Ll.I64; Ll.Ptr Ll.I8], Ll.Ptr Ll.I8));
   (Sym.symbol "report_error_array_index_out_of_bounds", ([], Ll.Void));
   (Sym.symbol "report_error_nil_access", ([], Ll.Void));
   (Sym.symbol "report_error_division_by_zero", ([], Ll.Void));
-  (Sym.symbol "string_length", ([Ll.Ptr ll_string_type], Ll.I64));
+  (Sym.symbol "string_length", ([ ll_string_type], Ll.I64));
 ] @ extfuns1 in
 
 
