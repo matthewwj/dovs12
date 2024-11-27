@@ -617,13 +617,11 @@ let codegen_prog (tprog : TAst.program) env =
     List.flatten (List.map (fun (_, _, gdecls) -> gdecls) func_results)
   in
 
-  (* 6. Extract runtime functions from the environment *)
   let runtime_funcs = extract_runtime_functions env in 
 
-let tdecls = (ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]) ::
+  let tdecls = (ll_string_type_name, Ll.Struct [Ll.I64; Ll.Array (0, Ll.I8)]) ::
   (Sym.symbol "dolphin_record_stream", Ll.Struct []) :: type_decls in
   
-  (* 7. Convert runtime functions to Ll.ExternalFunction *)
   let extfuns1 = 
     List.map (fun (sym, fun_typ) ->
       match fun_typ with

@@ -1,7 +1,7 @@
 record T1 { x: int; y : int;}
-record T2 { y: int; t1 : T1;}
+
 
 int main() {
     var a = new T1 { x = 2; y = 0;};
-    return a.x;   
+    return 1; 
 }

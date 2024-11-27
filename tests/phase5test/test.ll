@@ -1,11 +1,8 @@
 %string_type = type { i64, [0 x i8] }
 %dolphin_record_stream = type {  }
-%Tuple = type { i64 }
+%T1 = type { i64, i64 }
 
 @dolphin_rc_empty_string = external global %string_type
-
-@string_literal0 = global { i64, [12 x i8] } {i64 12, [12 x i8] c"Hello World\0A"}
-@string_literal3 = global { i64, [5 x i8] } {i64 5, [5 x i8] c"heheh"}
 
 declare i64 @compare_strings(%string_type*, %string_type*)
 declare i8* @allocate_record(i32)
@@ -49,16 +46,15 @@ declare %string_type** @get_cmd_args()
 declare void @exit(i64)
 
 define i64 @dolphin_fun_main () {
- %z9 = alloca i1
- %y5 = alloca %string_type*
- %x2 = alloca %string_type*
- %bitcast_string_literal1 = bitcast { i64, [12 x i8] }* @string_literal0 to %string_type**
- store %string_type* %bitcast_string_literal1, %string_type** %x2
- %bitcast_string_literal4 = bitcast { i64, [5 x i8] }* @string_literal3 to %string_type**
- store %string_type* %bitcast_string_literal4, %string_type** %y5
- %load6 = load %string_type*, %string_type** %x2
- %load7 = load %string_type*, %string_type** %y5
- %streq8 = call i1 @compare_strings ({ i64, [0 x i8] }* %load6, { i64, [0 x i8] }* %load7)
- store i1 %streq8, i1* %z9
+ %a6 = alloca %T1*
+ %size_ptr0 = getelementptr %T1, %T1* null, i32 1
+ %size1 = ptrtoint %T1* %size_ptr0 to i32
+ %malloc_ptr2 = call i8* @allocate_record (i32 %size1)
+ %T1_ptr3 = bitcast i8* %malloc_ptr2 to %T1*
+ %gep4 = getelementptr %T1, %T1* %T1_ptr3, i32 0, i32 0
+ store i64 2, i64* %gep4
+ %gep5 = getelementptr %T1, %T1* %T1_ptr3, i32 0, i32 1
+ store i64 0, i64* %gep5
+ store %T1* %T1_ptr3, %T1** %a6
  ret i64 1
 }
