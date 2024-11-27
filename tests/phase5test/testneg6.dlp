@@ -1,0 +1,10 @@
+/*   */ 
+record Car {
+    make: string;
+    model: string;
+}
+
+int main() {
+    var myCar: Car = nil;
+    return myCar.make == "Toyota"; 
+}

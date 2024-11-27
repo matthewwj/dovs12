@@ -1,0 +1,8 @@
+/* Invalid program; Should be invalid but isn't. Missing record field definition. */
+record qwe { x: int; y : int ; } 
+record T1 { x: int; t2 : int;}
+
+int main() {
+    var a = new qwe {x = 1;};
+    return 1;
+}

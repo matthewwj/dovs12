@@ -1,0 +1,11 @@
+/* Unkown field name */
+
+record Rectangle {
+    width: int;
+    height: int;
+}
+
+int main() {
+    var rect = new Rectangle { width = 10; height = 20; color = "red"; };
+    return 1;
+}

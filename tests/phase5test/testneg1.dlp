@@ -1,0 +1,10 @@
+/* Invalid program; Can't compare strings to ints */
+record qwe { x: int; y : int ; } 
+record T1 { x: int; t2 : int;}
+
+int main () {
+    var m = "hii";
+    var a = 1;
+    var z = m == a;
+    return 1;
+}

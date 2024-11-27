@@ -1,0 +1,14 @@
+/* Duplicate field name: Is currently returning the wrong error. */
+record Person {
+    name: string;
+    age: int;
+}
+
+record Person {  /* Duplicate record name */
+    height: int;
+}
+
+int main() {
+    var p: Person = new Person { name = "Alice"; age = 30; height = 170; };
+    return 0;
+}

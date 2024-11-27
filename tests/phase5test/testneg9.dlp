@@ -1,0 +1,10 @@
+/* Accessing unknown field in record: Should fails but fails because of the wrong reason atm. */
+record Point {
+    x: int;
+    y: int;
+}
+
+int main() {
+    var p: Point = new Point { x = 1; y = 2 };
+    return p.z; 
+}
